@@ -24,5 +24,13 @@ func main() {
 		fmt.Fprint(w, str)
 	})
 
+	http.HandleFunc("/traceroute", func(w http.ResponseWriter, r *http.Request) {
+		cmd := exec.Command("mtr", "-c", "4", "--report", "1.1.1.1")
+		stdout, _ := cmd.Output()
+		context := map[string]string{"title": "Traceroute to Cloudflare", "code": string(stdout)}
+		str, _ := mustache.RenderFileInLayout("assets/traceroute.html.mustache", "assets/layout.html.mustache", context)
+		fmt.Fprint(w, str)
+	})
+
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
