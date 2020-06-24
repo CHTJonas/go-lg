@@ -33,33 +33,45 @@ func main() {
 		var stdout []byte
 		uid := strings.TrimPrefix(r.URL.Path, "/ping/")
 		if uid != "" {
-			stdout = Read(uid)
+			stdout = Read("ping", uid)
 			context := map[string]string{"title": "Ping Cloudflare", "code": string(stdout)}
 			str, _ := mustache.RenderFileInLayout("assets/ping.html.mustache", "assets/layout.html.mustache", context)
 			fmt.Fprint(w, str)
 		} else {
 			cmd := exec.Command("ping", "-c", "4", "1.1.1.1")
 			stdout, _ := cmd.Output()
-			key, _ := Write(stdout)
-			http.Redirect(w, r, r.URL.String()+"/"+key, http.StatusTemporaryRedirect)
+			uid, _ := Write("ping", stdout)
+			Redirect(uid, w, r)
 		}
 	})
 
-	http.HandleFunc("/traceroute", func(w http.ResponseWriter, r *http.Request) {
-		cmd := exec.Command("mtr", "-c", "4", "--report", "1.1.1.1")
-		stdout, _ := cmd.Output()
-		context := map[string]string{"title": "Traceroute to Cloudflare", "code": string(stdout)}
-		str, _ := mustache.RenderFileInLayout("assets/traceroute.html.mustache", "assets/layout.html.mustache", context)
-		fmt.Fprint(w, str)
+	http.HandleFunc("/traceroute/", func(w http.ResponseWriter, r *http.Request) {
+		var stdout []byte
+		uid := strings.TrimPrefix(r.URL.Path, "/traceroute/")
+		if uid != "" {
+			stdout = Read("traceroute", uid)
+			context := map[string]string{"title": "Traceroute to Cloudflare", "code": string(stdout)}
+			str, _ := mustache.RenderFileInLayout("assets/traceroute.html.mustache", "assets/layout.html.mustache", context)
+			fmt.Fprint(w, str)
+		} else {
+			cmd := exec.Command("mtr", "-c", "4", "--report", "1.1.1.1")
+			stdout, _ := cmd.Output()
+			uid, _ := Write("traceroute", stdout)
+			Redirect(uid, w, r)
+		}
 	})
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
-func Read(key string) []byte {
+func Redirect(uid string, w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, r.URL.String()+"/"+uid, http.StatusTemporaryRedirect)
+}
+
+func Read(prefix string, uid string) []byte {
 	var stdout []byte
 	db.View(func(txn *badger.Txn) error {
-		item, err := txn.Get([]byte(key))
+		item, err := txn.Get([]byte(prefix + uid))
 		if err != nil {
 			return err
 		}
@@ -71,10 +83,10 @@ func Read(key string) []byte {
 	return stdout
 }
 
-func Write(stdout []byte) (string, error) {
+func Write(prefix string, stdout []byte) (string, error) {
 	uid := GenerateUID()
 	return uid, db.Update(func(txn *badger.Txn) error {
-		return txn.Set([]byte(uid), stdout)
+		return txn.Set([]byte(prefix+uid), stdout)
 	})
 }
 
