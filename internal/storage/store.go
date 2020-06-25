@@ -9,22 +9,22 @@ type Store struct {
 }
 
 func NewStore(path string) *Store {
-	s := &Store{}
+	store := &Store{}
 	db, err := badger.Open(badger.DefaultOptions(path))
 	if err != nil {
 		panic(err)
 	}
-	s.db = db
-	return s
+	store.db = db
+	return store
 }
 
-func (s *Store) Close() {
-	s.db.Close()
+func (store *Store) Close() {
+	store.db.Close()
 }
 
-func (s *Store) Read(prefix string, uid string) []byte {
+func (store *Store) Read(prefix string, uid string) []byte {
 	var data []byte
-	s.db.View(func(txn *badger.Txn) error {
+	store.db.View(func(txn *badger.Txn) error {
 		item, err := txn.Get([]byte(prefix + uid))
 		if err != nil {
 			return err
@@ -37,9 +37,9 @@ func (s *Store) Read(prefix string, uid string) []byte {
 	return data
 }
 
-func (s *Store) Write(prefix string, data []byte) (string, error) {
+func (store *Store) Write(prefix string, data []byte) (string, error) {
 	uid := GenerateUID()
-	return uid, s.db.Update(func(txn *badger.Txn) error {
+	return uid, store.db.Update(func(txn *badger.Txn) error {
 		return txn.Set([]byte(prefix+uid), data)
 	})
 }
