@@ -22,8 +22,10 @@ func NewServer(store *storage.Store) *Server {
 	}
 	r := mux.NewRouter()
 	r.HandleFunc("/", s.homeHandler)
-	r.HandleFunc("/ping/{uid}", s.pingHandler)
-	r.HandleFunc("/traceroute/{uid}/", s.tracerouteHandler)
+	r.HandleFunc("/ping", s.performPingHandler)
+	r.HandleFunc("/ping/{uid}", s.recallPingHandler)
+	r.HandleFunc("/traceroute", s.performTracerouteHandler)
+	r.HandleFunc("/traceroute/{uid}", s.recallTracerouteHandler)
 	s.r = r
 	return s
 }
@@ -39,36 +41,34 @@ func (serv Server) homeHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, str)
 }
 
-func (serv Server) pingHandler(w http.ResponseWriter, r *http.Request) {
-	var stdout []byte
-	uid := strings.TrimPrefix(r.URL.Path, "/ping/")
-	if uid != "" {
-		stdout = serv.s.Read("ping", uid)
-		context := map[string]string{"title": "Ping Cloudflare", "code": string(stdout)}
-		str, _ := mustache.RenderFileInLayout("assets/ping.html.mustache", "assets/layout.html.mustache", context)
-		fmt.Fprint(w, str)
-	} else {
-		cmd := exec.Command("ping", "-c", "4", "1.1.1.1")
-		stdout, _ := cmd.Output()
-		uid, _ := serv.s.Write("ping", stdout)
-		redirect(uid, w, r)
-	}
+func (serv Server) performPingHandler(w http.ResponseWriter, r *http.Request) {
+	cmd := exec.Command("ping", "-c", "4", "1.1.1.1")
+	stdout, _ := cmd.Output()
+	uid, _ := serv.s.Write("ping", stdout)
+	redirect(uid, w, r)
 }
 
-func (serv Server) tracerouteHandler(w http.ResponseWriter, r *http.Request) {
-	var stdout []byte
+func (serv Server) recallPingHandler(w http.ResponseWriter, r *http.Request) {
+	uid := strings.TrimPrefix(r.URL.Path, "/ping/")
+	stdout := serv.s.Read("ping", uid)
+	context := map[string]string{"title": "Ping Cloudflare", "code": string(stdout)}
+	str, _ := mustache.RenderFileInLayout("assets/ping.html.mustache", "assets/layout.html.mustache", context)
+	fmt.Fprint(w, str)
+}
+
+func (serv Server) performTracerouteHandler(w http.ResponseWriter, r *http.Request) {
+	cmd := exec.Command("mtr", "-c", "4", "--report", "1.1.1.1")
+	stdout, _ := cmd.Output()
+	uid, _ := serv.s.Write("traceroute", stdout)
+	redirect(uid, w, r)
+}
+
+func (serv Server) recallTracerouteHandler(w http.ResponseWriter, r *http.Request) {
 	uid := strings.TrimPrefix(r.URL.Path, "/traceroute/")
-	if uid != "" {
-		stdout = serv.s.Read("traceroute", uid)
-		context := map[string]string{"title": "Traceroute to Cloudflare", "code": string(stdout)}
-		str, _ := mustache.RenderFileInLayout("assets/traceroute.html.mustache", "assets/layout.html.mustache", context)
-		fmt.Fprint(w, str)
-	} else {
-		cmd := exec.Command("mtr", "-c", "4", "--report", "1.1.1.1")
-		stdout, _ := cmd.Output()
-		uid, _ := serv.s.Write("traceroute", stdout)
-		redirect(uid, w, r)
-	}
+	stdout := serv.s.Read("traceroute", uid)
+	context := map[string]string{"title": "Traceroute to Cloudflare", "code": string(stdout)}
+	str, _ := mustache.RenderFileInLayout("assets/traceroute.html.mustache", "assets/layout.html.mustache", context)
+	fmt.Fprint(w, str)
 }
 
 func redirect(uid string, w http.ResponseWriter, r *http.Request) {
