@@ -30,25 +30,25 @@ func NewServer(store *storage.Store) *Server {
 	return s
 }
 
-func (serv Server) Start() {
+func (serv *Server) Start() {
 	http.Handle("/", serv.r)
 	http.ListenAndServe(":8080", nil)
 }
 
-func (serv Server) homeHandler(w http.ResponseWriter, r *http.Request) {
+func (serv *Server) homeHandler(w http.ResponseWriter, r *http.Request) {
 	context := map[string]string{"title": "Home Page", "name": "World"}
 	str, _ := mustache.RenderFileInLayout("assets/home.html.mustache", "assets/layout.html.mustache", context)
 	fmt.Fprint(w, str)
 }
 
-func (serv Server) performPingHandler(w http.ResponseWriter, r *http.Request) {
+func (serv *Server) performPingHandler(w http.ResponseWriter, r *http.Request) {
 	cmd := exec.Command("ping", "-c", "4", "1.1.1.1")
 	stdout, _ := cmd.Output()
 	uid, _ := serv.s.Write("ping", stdout)
 	redirect(uid, w, r)
 }
 
-func (serv Server) recallPingHandler(w http.ResponseWriter, r *http.Request) {
+func (serv *Server) recallPingHandler(w http.ResponseWriter, r *http.Request) {
 	uid := strings.TrimPrefix(r.URL.Path, "/ping/")
 	stdout := serv.s.Read("ping", uid)
 	context := map[string]string{"title": "Ping Cloudflare", "code": string(stdout)}
@@ -56,14 +56,14 @@ func (serv Server) recallPingHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, str)
 }
 
-func (serv Server) performTracerouteHandler(w http.ResponseWriter, r *http.Request) {
+func (serv *Server) performTracerouteHandler(w http.ResponseWriter, r *http.Request) {
 	cmd := exec.Command("mtr", "-c", "4", "--report", "1.1.1.1")
 	stdout, _ := cmd.Output()
 	uid, _ := serv.s.Write("traceroute", stdout)
 	redirect(uid, w, r)
 }
 
-func (serv Server) recallTracerouteHandler(w http.ResponseWriter, r *http.Request) {
+func (serv *Server) recallTracerouteHandler(w http.ResponseWriter, r *http.Request) {
 	uid := strings.TrimPrefix(r.URL.Path, "/traceroute/")
 	stdout := serv.s.Read("traceroute", uid)
 	context := map[string]string{"title": "Traceroute to Cloudflare", "code": string(stdout)}
