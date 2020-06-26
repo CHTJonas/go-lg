@@ -23,7 +23,7 @@ func NewServer(store *storage.Store) *Server {
 	s := &Server{
 		s: store,
 	}
-	r := mux.NewRouter()
+	r := mux.NewRouter().StrictSlash(true)
 	r.HandleFunc("/", s.homeHandler)
 	r.HandleFunc("/ping", s.performPingHandler)
 	r.HandleFunc("/ping/{uid}", s.recallPingHandler)
