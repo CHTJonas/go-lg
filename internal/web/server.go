@@ -1,10 +1,12 @@
 package web
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/cbroglie/mustache"
 	"github.com/chtjonas/go-lg/internal/storage"
@@ -12,8 +14,9 @@ import (
 )
 
 type Server struct {
-	r *mux.Router
-	s *storage.Store
+	r   *mux.Router
+	s   *storage.Store
+	srv *http.Server
 }
 
 func NewServer(store *storage.Store) *Server {
@@ -30,9 +33,19 @@ func NewServer(store *storage.Store) *Server {
 	return s
 }
 
-func (serv *Server) Start() {
-	http.Handle("/", serv.r)
-	http.ListenAndServe(":8080", nil)
+func (serv *Server) Start(addr string) error {
+	serv.srv = &http.Server{
+		Addr:         addr,
+		Handler:      serv.r,
+		WriteTimeout: time.Second * 60,
+		ReadTimeout:  time.Second * 60,
+		IdleTimeout:  time.Second * 90,
+	}
+	return serv.srv.ListenAndServe()
+}
+
+func (serv *Server) Stop(ctx context.Context) error {
+	return serv.srv.Shutdown(ctx)
 }
 
 func (serv *Server) homeHandler(w http.ResponseWriter, r *http.Request) {
