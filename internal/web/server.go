@@ -63,7 +63,11 @@ func (serv *Server) performPingHandler(w http.ResponseWriter, r *http.Request) {
 func (serv *Server) recallPingHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	stdout := serv.s.Read("ping", vars["uid"])
-	context := map[string]string{"title": "Ping Cloudflare", "code": string(stdout)}
+	if len(stdout) == 0 {
+		stdout = []byte("HTTP 404 Report Not Found")
+		w.WriteHeader(http.StatusNotFound)
+	}
+	context := map[string]string{"title": "Ping Report", "code": string(stdout)}
 	str, _ := mustache.RenderFileInLayout("assets/ping.html.mustache", "assets/layout.html.mustache", context)
 	fmt.Fprint(w, str)
 }
@@ -78,7 +82,11 @@ func (serv *Server) performTracerouteHandler(w http.ResponseWriter, r *http.Requ
 func (serv *Server) recallTracerouteHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	stdout := serv.s.Read("traceroute", vars["uid"])
-	context := map[string]string{"title": "Traceroute to Cloudflare", "code": string(stdout)}
+	if len(stdout) == 0 {
+		stdout = []byte("HTTP 404 Report Not Found")
+		w.WriteHeader(http.StatusNotFound)
+	}
+	context := map[string]string{"title": "Traceroute Report", "code": string(stdout)}
 	str, _ := mustache.RenderFileInLayout("assets/traceroute.html.mustache", "assets/layout.html.mustache", context)
 	fmt.Fprint(w, str)
 }
