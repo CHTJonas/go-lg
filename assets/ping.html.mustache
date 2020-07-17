@@ -1,2 +1,14 @@
 <h1 class="mb-4">{{ title }}</h1>
+
+<form action="/ping/action" method="get" class="">
+    <div class="form-group row">
+        <div class="col-sm-5">
+            <input type="text" name="target" id="target" placeholder="Target hostname or IP" class="form-control">
+        </div>
+        <div class="col-sm-7 mt-2 mt-sm-0">
+            <input type="submit" class="btn btn-primary">
+        </div>
+    </div>
+</form>
+
 <pre>{{ code }}</pre>

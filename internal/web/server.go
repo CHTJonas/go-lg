@@ -23,9 +23,10 @@ func NewServer(store *storage.Store) *Server {
 		s: store,
 	}
 	r := mux.NewRouter().StrictSlash(true)
-	r.HandleFunc("/", s.homeHandler)
-	r.HandleFunc("/ping", s.performPingHandler)
-	r.HandleFunc("/ping/{uid}", s.recallPingHandler)
+	r.HandleFunc("/", s.getHomePage)
+	r.HandleFunc("/ping", s.getPingForm)
+	r.HandleFunc("/ping/action", s.submitPingForm)
+	r.HandleFunc("/ping/{uid}", s.getPingResults)
 	r.HandleFunc("/traceroute", s.performTracerouteHandler)
 	r.HandleFunc("/traceroute/{uid}", s.recallTracerouteHandler)
 	s.r = r
@@ -47,20 +48,27 @@ func (serv *Server) Stop(ctx context.Context) error {
 	return serv.srv.Shutdown(ctx)
 }
 
-func (serv *Server) homeHandler(w http.ResponseWriter, r *http.Request) {
+func (serv *Server) getHomePage(w http.ResponseWriter, r *http.Request) {
 	context := map[string]string{"title": "Home Page", "name": "World"}
 	str, _ := mustache.RenderFileInLayout("assets/home.html.mustache", "assets/layout.html.mustache", context)
 	fmt.Fprint(w, str)
 }
 
-func (serv *Server) performPingHandler(w http.ResponseWriter, r *http.Request) {
-	cmd := exec.Command("ping", "-c", "4", "1.1.1.1")
-	stdout, _ := cmd.Output()
-	uid, _ := serv.s.Write("ping", stdout)
-	redirect(uid, w, r)
+func (serv *Server) getPingForm(w http.ResponseWriter, r *http.Request) {
+	context := map[string]string{"title": "Ping Report"}
+	str, _ := mustache.RenderFileInLayout("assets/ping.html.mustache", "assets/layout.html.mustache", context)
+	fmt.Fprint(w, str)
 }
 
-func (serv *Server) recallPingHandler(w http.ResponseWriter, r *http.Request) {
+func (serv *Server) submitPingForm(w http.ResponseWriter, r *http.Request) {
+	ip := r.URL.Query().Get("target")
+	cmd := exec.Command("ping", "-c", "4", ip)
+	stdout, _ := cmd.Output()
+	uid, _ := serv.s.Write("ping", stdout)
+	redirect("ping", uid, w, r)
+}
+
+func (serv *Server) getPingResults(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	stdout := serv.s.Read("ping", vars["uid"])
 	if len(stdout) == 0 {
@@ -76,7 +84,7 @@ func (serv *Server) performTracerouteHandler(w http.ResponseWriter, r *http.Requ
 	cmd := exec.Command("mtr", "-c", "4", "--report", "1.1.1.1")
 	stdout, _ := cmd.Output()
 	uid, _ := serv.s.Write("traceroute", stdout)
-	redirect(uid, w, r)
+	redirect("traceroute", uid, w, r)
 }
 
 func (serv *Server) recallTracerouteHandler(w http.ResponseWriter, r *http.Request) {
@@ -91,6 +99,6 @@ func (serv *Server) recallTracerouteHandler(w http.ResponseWriter, r *http.Reque
 	fmt.Fprint(w, str)
 }
 
-func redirect(uid string, w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, r.URL.String()+"/"+uid, http.StatusTemporaryRedirect)
+func redirect(base string, uid string, w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "/"+base+"/"+uid, http.StatusTemporaryRedirect)
 }
