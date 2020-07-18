@@ -27,8 +27,9 @@ func NewServer(store *storage.Store) *Server {
 	r.HandleFunc("/ping", s.getPingForm)
 	r.HandleFunc("/ping/action", s.submitPingForm)
 	r.HandleFunc("/ping/{uid}", s.getPingResults)
-	r.HandleFunc("/traceroute", s.performTracerouteHandler)
-	r.HandleFunc("/traceroute/{uid}", s.recallTracerouteHandler)
+	r.HandleFunc("/traceroute", s.getTracerouteForm)
+	r.HandleFunc("/traceroute/action", s.submitTracerouteForm)
+	r.HandleFunc("/traceroute/{uid}", s.getTracerouteResults)
 	s.r = r
 	return s
 }
@@ -55,14 +56,14 @@ func (serv *Server) getHomePage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (serv *Server) getPingForm(w http.ResponseWriter, r *http.Request) {
-	context := map[string]string{"title": "Ping Report"}
-	str, _ := mustache.RenderFileInLayout("assets/ping.html.mustache", "assets/layout.html.mustache", context)
+	context := map[string]string{"title": "Ping Report", "submissionURL": "/ping/action"}
+	str, _ := mustache.RenderFileInLayout("assets/form.html.mustache", "assets/layout.html.mustache", context)
 	fmt.Fprint(w, str)
 }
 
 func (serv *Server) submitPingForm(w http.ResponseWriter, r *http.Request) {
-	ip := r.URL.Query().Get("target")
-	cmd := exec.Command("ping", "-c", "4", ip)
+	target := r.URL.Query().Get("target")
+	cmd := exec.Command("ping", "-c", "4", target)
 	stdout, _ := cmd.Output()
 	uid, _ := serv.s.Write("ping", stdout)
 	redirect("ping", uid, w, r)
@@ -75,27 +76,34 @@ func (serv *Server) getPingResults(w http.ResponseWriter, r *http.Request) {
 		stdout = []byte("HTTP 404 Report Not Found")
 		w.WriteHeader(http.StatusNotFound)
 	}
-	context := map[string]string{"title": "Ping Report", "code": string(stdout)}
-	str, _ := mustache.RenderFileInLayout("assets/ping.html.mustache", "assets/layout.html.mustache", context)
+	context := map[string]string{"title": "Ping Report", "code": string(stdout), "submissionURL": "/ping/action"}
+	str, _ := mustache.RenderFileInLayout("assets/form.html.mustache", "assets/layout.html.mustache", context)
 	fmt.Fprint(w, str)
 }
 
-func (serv *Server) performTracerouteHandler(w http.ResponseWriter, r *http.Request) {
-	cmd := exec.Command("mtr", "-c", "4", "--report", "1.1.1.1")
+func (serv *Server) getTracerouteForm(w http.ResponseWriter, r *http.Request) {
+	context := map[string]string{"title": "Traceroute Report", "submissionURL": "/traceroute/action"}
+	str, _ := mustache.RenderFileInLayout("assets/form.html.mustache", "assets/layout.html.mustache", context)
+	fmt.Fprint(w, str)
+}
+
+func (serv *Server) submitTracerouteForm(w http.ResponseWriter, r *http.Request) {
+	target := r.URL.Query().Get("target")
+	cmd := exec.Command("mtr", "-c", "4", "--report", target)
 	stdout, _ := cmd.Output()
 	uid, _ := serv.s.Write("traceroute", stdout)
 	redirect("traceroute", uid, w, r)
 }
 
-func (serv *Server) recallTracerouteHandler(w http.ResponseWriter, r *http.Request) {
+func (serv *Server) getTracerouteResults(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	stdout := serv.s.Read("traceroute", vars["uid"])
 	if len(stdout) == 0 {
 		stdout = []byte("HTTP 404 Report Not Found")
 		w.WriteHeader(http.StatusNotFound)
 	}
-	context := map[string]string{"title": "Traceroute Report", "code": string(stdout)}
-	str, _ := mustache.RenderFileInLayout("assets/traceroute.html.mustache", "assets/layout.html.mustache", context)
+	context := map[string]string{"title": "Traceroute Report", "code": string(stdout), "submissionURL": "/traceroute/action"}
+	str, _ := mustache.RenderFileInLayout("assets/form.html.mustache", "assets/layout.html.mustache", context)
 	fmt.Fprint(w, str)
 }
 
