@@ -89,7 +89,7 @@ func (serv *Server) getTracerouteForm(w http.ResponseWriter, r *http.Request) {
 
 func (serv *Server) submitTracerouteForm(w http.ResponseWriter, r *http.Request) {
 	target := r.URL.Query().Get("target")
-	cmd := exec.Command("mtr", "-c", "4", "--report", target)
+	cmd := exec.Command("mtr", "-c", "4", "--report-wide", target)
 	stdout, _ := cmd.Output()
 	uid, _ := serv.s.Write("traceroute", stdout)
 	redirect("traceroute", uid, w, r)
