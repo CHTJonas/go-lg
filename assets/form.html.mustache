@@ -6,6 +6,14 @@
             <input type="text" name="target" id="target" placeholder="Target hostname or IP" class="form-control">
         </div>
         <div class="col-sm-7 mt-2 mt-sm-0">
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="protocolVersion" id="protocolVer4" value="4">
+                <label class="form-check-label" for="protocolVer4">IPv4</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="protocolVersion" id="protocolVer6" value="6">
+                <label class="form-check-label" for="protocolVer6">IPv6</label>
+            </div>
             <input type="submit" class="btn btn-primary">
         </div>
     </div>
