@@ -69,13 +69,14 @@ func (serv *Server) getPingForm(w http.ResponseWriter, r *http.Request) {
 func (serv *Server) submitPingForm(w http.ResponseWriter, r *http.Request) {
 	target := r.URL.Query().Get("target")
 	protocolVersion := r.URL.Query().Get("protocolVersion")
-	var protoVerFlag string
+	var cmd *exec.Cmd
 	if protocolVersion == "4" {
-		protoVerFlag = "-4"
+		cmd = exec.Command("ping", "-4", "-c", "4", target)
 	} else if protocolVersion == "6" {
-		protoVerFlag = "-6"
+		cmd = exec.Command("ping", "-6", "-c", "4", target)
+	} else {
+		cmd = exec.Command("ping", "-c", "4", target)
 	}
-	cmd := exec.Command("ping", protoVerFlag, "-c", "4", target)
 	stdout, _ := cmd.Output()
 	uid, _ := serv.s.Write("ping", stdout)
 	redirect("ping", uid, w, r)
@@ -106,13 +107,14 @@ func (serv *Server) getTracerouteForm(w http.ResponseWriter, r *http.Request) {
 func (serv *Server) submitTracerouteForm(w http.ResponseWriter, r *http.Request) {
 	target := r.URL.Query().Get("target")
 	protocolVersion := r.URL.Query().Get("protocolVersion")
-	var protoVerFlag string
+	var cmd *exec.Cmd
 	if protocolVersion == "4" {
-		protoVerFlag = "-4"
+		cmd = exec.Command("mtr", "-4", "-c", "4", "--report-wide", target)
 	} else if protocolVersion == "6" {
-		protoVerFlag = "-6"
+		cmd = exec.Command("mtr", "-6", "-c", "4", "--report-wide", target)
+	} else {
+		cmd = exec.Command("mtr", "-c", "4", "--report-wide", target)
 	}
-	cmd := exec.Command("mtr", protoVerFlag, "-c", "4", "--report-wide", target)
 	stdout, _ := cmd.Output()
 	uid, _ := serv.s.Write("traceroute", stdout)
 	redirect("traceroute", uid, w, r)
