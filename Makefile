@@ -23,28 +23,44 @@ format:
 build/assets:
 	go-bindata -o internal/assets/assets.go -pkg assets assets/
 
-build/armv7: build/assets
+build/linux/armv7: build/assets
 	export GOOS=linux
 	export GOARCH=arm
 	export GOARM=7
-	$(GOBUILD) -o bin/go-lg-armv7 cmd/go-lg/main.go
+	$(GOBUILD) -o bin/linux-armv7/go-lg cmd/go-lg/main.go
 
-build/arm64: build/assets
+build/linux/arm64: build/assets
 	export GOOS=linux
 	export GOARCH=arm64
-	$(GOBUILD) -o bin/go-lg-arm64 cmd/go-lg/main.go
+	$(GOBUILD) -o bin/linux-arm64/go-lg cmd/go-lg/main.go
 
-build/386: build/assets
+build/linux/i386: build/assets
 	export GOOS=linux
 	export GOARCH=386
-	$(GOBUILD) -o bin/go-lg-386 cmd/go-lg/main.go
+	$(GOBUILD) -o bin/linux-i386/go-lg cmd/go-lg/main.go
 
-build/amd64: build/assets
+build/linux/amd64: build/assets
 	export GOOS=linux
 	export GOARCH=amd64
-	$(GOBUILD) -o bin/go-lg-amd64 cmd/go-lg/main.go
+	$(GOBUILD) -o bin/linux-amd64/go-lg cmd/go-lg/main.go
 
-build: build/armv7 build/arm64 build/386 build/amd64
+build/linux: build/linux/armv7 build/linux/arm64 build/linux/i386 build/linux/amd64
+
+build/darwin/amd64: build/assets
+	export GOOS=darwin
+	export GOARCH=amd64
+	$(GOBUILD) -o bin/darwin-amd64/go-lg cmd/go-lg/main.go
+
+build/darwin: build/darwin/amd64
+
+build/windows/amd64:
+	export GOOS=windows
+	export GOARCH=amd64
+	$(GOBUILD) -o bin/windows-amd64/go-lg cmd/go-lg/main.go
+
+build/windows: build/windows/amd64
+
+build: build/linux build/darwin build/windows
 
 clean:
 	@rm -rf bin
