@@ -4,7 +4,7 @@ SHELL := bash
 GO=$(shell which go)
 GOGET=$(GO) get
 GOFMT=$(GO) fmt
-GOBUILD=$(GO) build
+GOBUILD=$(GO) build -ldflags "-X main.ver=`git describe --tags`"
 
 BINDATA=$(shell which go-bindata)
 

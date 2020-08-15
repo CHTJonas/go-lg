@@ -17,11 +17,13 @@ type Server struct {
 	r   *mux.Router
 	s   *storage.Store
 	srv *http.Server
+	ver string
 }
 
-func NewServer(store *storage.Store) *Server {
+func NewServer(store *storage.Store, ver string) *Server {
 	s := &Server{
-		s: store,
+		s:   store,
+		ver: ver,
 	}
 	r := mux.NewRouter().StrictSlash(true)
 	r.HandleFunc("/", s.getHomePage)
@@ -53,7 +55,7 @@ func (serv *Server) Stop(ctx context.Context) error {
 func (serv *Server) getHomePage(w http.ResponseWriter, r *http.Request) {
 	partial, _ := assets.Asset("assets/home.html.mustache")
 	layout, _ := assets.Asset("assets/layout.html.mustache")
-	context := map[string]string{"title": "Home Page", "name": "World"}
+	context := map[string]string{"title": "Home Page", "version": serv.ver}
 	str, _ := mustache.RenderInLayout(string(partial), string(layout), context)
 	fmt.Fprint(w, str)
 }

@@ -11,11 +11,13 @@ import (
 	"github.com/chtjonas/go-lg/internal/web"
 )
 
+var ver string
+
 func main() {
 	store := storage.NewStore("/tmp/badger")
 	defer store.Close()
 
-	serv := web.NewServer(store)
+	serv := web.NewServer(store, ver)
 	go func() {
 		if err := serv.Start("127.0.0.1:8080"); err != nil {
 			fmt.Println(err)
