@@ -10,7 +10,8 @@ type Store struct {
 
 func NewStore(path string) *Store {
 	store := &Store{}
-	db, err := badger.Open(badger.DefaultOptions(path))
+	opts := badger.DefaultOptions(path).WithLogger(newStorageLogger())
+	db, err := badger.Open(opts)
 	if err != nil {
 		panic(err)
 	}
