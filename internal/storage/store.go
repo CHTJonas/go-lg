@@ -9,9 +9,9 @@ type Store struct {
 	db *badger.DB
 }
 
-func NewStore(path string) *Store {
+func NewStore(path string, level logging.Level) *Store {
 	store := &Store{}
-	logger := logging.NewPrefixedLogger("db")
+	logger := logging.NewPrefixedLogger("db", level)
 	opts := badger.DefaultOptions(path).WithLogger(logger)
 	db, err := badger.Open(opts)
 	if err != nil {

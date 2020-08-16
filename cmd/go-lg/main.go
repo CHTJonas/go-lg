@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/chtjonas/go-lg/internal/logging"
 	"github.com/chtjonas/go-lg/internal/storage"
 	"github.com/chtjonas/go-lg/internal/web"
 )
@@ -14,7 +15,7 @@ import (
 var ver string
 
 func main() {
-	store := storage.NewStore("/tmp/badger")
+	store := storage.NewStore("/tmp/badger", logging.INFO)
 	defer store.Close()
 
 	serv := web.NewServer(store, ver)
