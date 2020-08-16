@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"github.com/chtjonas/go-lg/internal/logging"
 	"github.com/dgraph-io/badger"
 )
 
@@ -10,7 +11,8 @@ type Store struct {
 
 func NewStore(path string) *Store {
 	store := &Store{}
-	opts := badger.DefaultOptions(path).WithLogger(newStorageLogger())
+	logger := logging.NewPrefixedLogger("db")
+	opts := badger.DefaultOptions(path).WithLogger(logger)
 	db, err := badger.Open(opts)
 	if err != nil {
 		panic(err)
