@@ -14,9 +14,11 @@ import (
 
 var ver string
 
+const loggingPrefix string = "app"
+
 func main() {
 	logLevel := logging.INFO
-	applicationLogger := logging.NewPrefixedLogger("app", logLevel)
+	applicationLogger := logging.NewPrefixedLogger(loggingPrefix, logLevel)
 	applicationLogger.Infof("go-lg version %s starting up...", ver)
 	defer applicationLogger.Infof("go-lg will now exit...")
 
