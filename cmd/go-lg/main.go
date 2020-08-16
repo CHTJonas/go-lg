@@ -15,7 +15,12 @@ import (
 var ver string
 
 func main() {
-	store := storage.NewStore("/tmp/badger", logging.INFO)
+	logLevel := logging.INFO
+	applicationLogger := logging.NewPrefixedLogger("app", logLevel)
+	applicationLogger.Infof("go-lg version %s starting up...", ver)
+	defer applicationLogger.Infof("go-lg will now exit...")
+
+	store := storage.NewStore("/tmp/badger", logLevel)
 	defer store.Close()
 
 	serv := web.NewServer(store, ver)
@@ -29,6 +34,7 @@ func main() {
 	signal.Notify(c, os.Interrupt)
 	<-c
 
+	applicationLogger.Infof("Shutdown initiated...")
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 	serv.Stop(ctx)
