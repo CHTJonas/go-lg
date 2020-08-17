@@ -5,25 +5,31 @@ import (
 	"fmt"
 	"net/http"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/cbroglie/mustache"
 	"github.com/chtjonas/go-lg/internal/assets"
+	"github.com/chtjonas/go-lg/internal/logging"
 	"github.com/chtjonas/go-lg/internal/storage"
 	"github.com/gorilla/mux"
 )
 
 type Server struct {
-	r   *mux.Router
-	s   *storage.Store
-	srv *http.Server
-	ver string
+	r      *mux.Router
+	s      *storage.Store
+	srv    *http.Server
+	ver    string
+	logger *logging.PrefixedLogger
 }
 
-func NewServer(store *storage.Store, ver string) *Server {
+const loggingPrefix string = "http"
+
+func NewServer(store *storage.Store, ver string, level logging.Level) *Server {
 	s := &Server{
-		s:   store,
-		ver: ver,
+		s:      store,
+		ver:    ver,
+		logger: logging.NewPrefixedLogger(loggingPrefix, level),
 	}
 	r := mux.NewRouter().StrictSlash(true)
 	r.HandleFunc("/", s.getHomePage)
@@ -33,6 +39,7 @@ func NewServer(store *storage.Store, ver string) *Server {
 	r.HandleFunc("/traceroute", s.getTracerouteForm)
 	r.HandleFunc("/traceroute/action", s.submitTracerouteForm)
 	r.HandleFunc("/traceroute/{uid}", s.getTracerouteResults)
+	r.Use(s.loggingMiddleware)
 	s.r = r
 	return s
 }
@@ -44,12 +51,24 @@ func (serv *Server) Start(addr string) error {
 		WriteTimeout: time.Second * 60,
 		ReadTimeout:  time.Second * 60,
 		IdleTimeout:  time.Second * 90,
+		ErrorLog:     serv.logger.Logger,
 	}
 	return serv.srv.ListenAndServe()
 }
 
 func (serv *Server) Stop(ctx context.Context) error {
 	return serv.srv.Shutdown(ctx)
+}
+
+func (serv *Server) loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ip := strings.Split(r.RemoteAddr, ":")[0]
+		method := r.Method
+		uri := r.RequestURI
+		proto := r.Proto
+		serv.logger.Infof("%s \"%s %s %s\"", ip, method, uri, proto)
+		next.ServeHTTP(w, r)
+	})
 }
 
 func (serv *Server) getHomePage(w http.ResponseWriter, r *http.Request) {

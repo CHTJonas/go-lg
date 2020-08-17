@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"time"
@@ -25,9 +26,9 @@ func main() {
 	store := storage.NewStore("/tmp/badger", logLevel)
 	defer store.Close()
 
-	serv := web.NewServer(store, ver)
+	serv := web.NewServer(store, ver, logLevel)
 	go func() {
-		if err := serv.Start("127.0.0.1:8080"); err != nil {
+		if err := serv.Start("127.0.0.1:8080"); err != nil && err != http.ErrServerClosed {
 			fmt.Println(err)
 		}
 	}()
