@@ -57,6 +57,7 @@ func (serv *Server) Start(addr string) error {
 }
 
 func (serv *Server) Stop(ctx context.Context) error {
+	serv.srv.SetKeepAlivesEnabled(false)
 	return serv.srv.Shutdown(ctx)
 }
 
