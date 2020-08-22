@@ -3,18 +3,20 @@
 <form action="{{ submissionURL }}" method="get">
     <div class="form-row align-items-center">
         <div class="col-xl-5 col-lg-6 col-md-7">
-            <input type="text" name="target" id="target" placeholder="Target hostname or IP" class="form-control">
+            <input type="text" name="target" id="target" placeholder="{{ placeholder }}" class="form-control">
         </div>
-        <div class="col-auto mt-2 mt-sm-0">
-            <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="protocolVersion" id="protocolVer4" value="4">
-                <label class="form-check-label" for="protocolVer4">IPv4</label>
+        {{#checkboxes}}
+            <div class="col-auto mt-2 mt-sm-0">
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="protocolVersion" id="protocolVer4" value="4">
+                    <label class="form-check-label" for="protocolVer4">IPv4</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="protocolVersion" id="protocolVer6" value="6">
+                    <label class="form-check-label" for="protocolVer6">IPv6</label>
+                </div>
             </div>
-            <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="protocolVersion" id="protocolVer6" value="6">
-                <label class="form-check-label" for="protocolVer6">IPv6</label>
-            </div>
-        </div>
+        {{/checkboxes}}
         <div class="col-auto mt-2 mt-lg-0">
             <input type="submit" class="btn btn-primary">
         </div>

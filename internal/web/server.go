@@ -39,6 +39,9 @@ func NewServer(store *storage.Store, ver string, level logging.Level) *Server {
 	r.HandleFunc("/traceroute", s.getTracerouteForm)
 	r.HandleFunc("/traceroute/action", s.submitTracerouteForm)
 	r.HandleFunc("/traceroute/{uid}", s.getTracerouteResults)
+	r.HandleFunc("/whois", s.getWHOISForm)
+	r.HandleFunc("/whois/action", s.submitWHOISForm)
+	r.HandleFunc("/whois/{uid}", s.getWHOISResults)
 	r.Use(s.loggingMiddleware)
 	s.r = r
 	return s
@@ -83,7 +86,7 @@ func (serv *Server) getHomePage(w http.ResponseWriter, r *http.Request) {
 func (serv *Server) getPingForm(w http.ResponseWriter, r *http.Request) {
 	partial, _ := assets.Asset("assets/form.html.mustache")
 	layout, _ := assets.Asset("assets/layout.html.mustache")
-	context := map[string]string{"title": "Ping Report", "submissionURL": "/ping/action"}
+	context := map[string]string{"title": "Ping Report", "submissionURL": "/ping/action", "placeholder": "Target hostname or IP", "checkboxes": "yes"}
 	str, _ := mustache.RenderInLayout(string(partial), string(layout), context)
 	fmt.Fprint(w, str)
 }
@@ -113,7 +116,7 @@ func (serv *Server) getPingResults(w http.ResponseWriter, r *http.Request) {
 	}
 	partial, _ := assets.Asset("assets/form.html.mustache")
 	layout, _ := assets.Asset("assets/layout.html.mustache")
-	context := map[string]string{"title": "Ping Report", "code": string(stdout), "submissionURL": "/ping/action"}
+	context := map[string]string{"title": "Ping Report", "code": string(stdout), "submissionURL": "/ping/action", "placeholder": "Target hostname or IP", "checkboxes": "yes"}
 	str, _ := mustache.RenderInLayout(string(partial), string(layout), context)
 	fmt.Fprint(w, str)
 }
@@ -121,7 +124,7 @@ func (serv *Server) getPingResults(w http.ResponseWriter, r *http.Request) {
 func (serv *Server) getTracerouteForm(w http.ResponseWriter, r *http.Request) {
 	partial, _ := assets.Asset("assets/form.html.mustache")
 	layout, _ := assets.Asset("assets/layout.html.mustache")
-	context := map[string]string{"title": "Traceroute Report", "submissionURL": "/traceroute/action"}
+	context := map[string]string{"title": "Traceroute Report", "submissionURL": "/traceroute/action", "placeholder": "Target hostname or IP", "checkboxes": "yes"}
 	str, _ := mustache.RenderInLayout(string(partial), string(layout), context)
 	fmt.Fprint(w, str)
 }
@@ -151,7 +154,37 @@ func (serv *Server) getTracerouteResults(w http.ResponseWriter, r *http.Request)
 	}
 	partial, _ := assets.Asset("assets/form.html.mustache")
 	layout, _ := assets.Asset("assets/layout.html.mustache")
-	context := map[string]string{"title": "Traceroute Report", "code": string(stdout), "submissionURL": "/traceroute/action"}
+	context := map[string]string{"title": "Traceroute Report", "code": string(stdout), "submissionURL": "/traceroute/action", "placeholder": "Target hostname or IP", "checkboxes": "yes"}
+	str, _ := mustache.RenderInLayout(string(partial), string(layout), context)
+	fmt.Fprint(w, str)
+}
+
+func (serv *Server) getWHOISForm(w http.ResponseWriter, r *http.Request) {
+	partial, _ := assets.Asset("assets/form.html.mustache")
+	layout, _ := assets.Asset("assets/layout.html.mustache")
+	context := map[string]string{"title": "WHOIS Report", "submissionURL": "/whois/action", "placeholder": "Query name"}
+	str, _ := mustache.RenderInLayout(string(partial), string(layout), context)
+	fmt.Fprint(w, str)
+}
+
+func (serv *Server) submitWHOISForm(w http.ResponseWriter, r *http.Request) {
+	target := r.URL.Query().Get("target")
+	cmd := exec.Command("whois", target)
+	stdout, _ := cmd.Output()
+	uid, _ := serv.s.Write("whois", stdout)
+	redirect("whois", uid, w, r)
+}
+
+func (serv *Server) getWHOISResults(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	stdout := serv.s.Read("whois", vars["uid"])
+	if len(stdout) == 0 {
+		stdout = []byte("HTTP 404 Report Not Found")
+		w.WriteHeader(http.StatusNotFound)
+	}
+	partial, _ := assets.Asset("assets/form.html.mustache")
+	layout, _ := assets.Asset("assets/layout.html.mustache")
+	context := map[string]string{"title": "WHOIS Report", "code": string(stdout), "submissionURL": "/whois/action", "placeholder": "Query name"}
 	str, _ := mustache.RenderInLayout(string(partial), string(layout), context)
 	fmt.Fprint(w, str)
 }
