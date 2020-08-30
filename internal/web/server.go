@@ -134,11 +134,11 @@ func (serv *Server) submitTracerouteForm(w http.ResponseWriter, r *http.Request)
 	protocolVersion := r.URL.Query().Get("protocolVersion")
 	var cmd *exec.Cmd
 	if protocolVersion == "4" {
-		cmd = exec.Command("mtr", "-4", "-c", "4", "--report-wide", target)
+		cmd = exec.Command("mtr", "-4", "-c", "4", "-bez", "-w", target)
 	} else if protocolVersion == "6" {
-		cmd = exec.Command("mtr", "-6", "-c", "4", "--report-wide", target)
+		cmd = exec.Command("mtr", "-6", "-c", "4", "-bez", "-w", target)
 	} else {
-		cmd = exec.Command("mtr", "-c", "4", "--report-wide", target)
+		cmd = exec.Command("mtr", "-c", "4", "-bez", "-w", target)
 	}
 	stdout, _ := cmd.Output()
 	uid, _ := serv.s.Write("traceroute", stdout)
