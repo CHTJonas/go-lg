@@ -2,7 +2,6 @@ SHELL := bash
 .ONESHELL:
 
 GO=$(shell which go)
-GOGET=$(GO) get
 GOFMT=$(GO) fmt
 GOBUILD=$(GO) build -ldflags "-X main.ver=`git describe --tags`"
 
@@ -10,12 +9,6 @@ BINDATA=$(shell which go-bindata)
 
 dir:
 	@if [ ! -d bin ] ; then mkdir -p bin ; fi
-
-get:
-	$(GOGET) github.com/shuLhan/go-bindata/...
-	$(GOGET) github.com/dgraph-io/badger
-	$(GOGET) github.com/cbroglie/mustache
-	$(GOGET) github.com/gorilla/mux
 
 format:
 	$(GOFMT) ./...
