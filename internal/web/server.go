@@ -13,6 +13,7 @@ import (
 	"github.com/chtjonas/go-lg/internal/logging"
 	"github.com/chtjonas/go-lg/internal/storage"
 	"github.com/gorilla/mux"
+	"go.uber.org/ratelimit"
 )
 
 type Server struct {
@@ -21,6 +22,7 @@ type Server struct {
 	srv    *http.Server
 	ver    string
 	logger *logging.PrefixedLogger
+	rl     ratelimit.Limiter
 }
 
 const loggingPrefix string = "http"
@@ -30,6 +32,7 @@ func NewServer(store *storage.Store, ver string, level logging.Level) *Server {
 		s:      store,
 		ver:    ver,
 		logger: logging.NewPrefixedLogger(loggingPrefix, level),
+		rl:     ratelimit.New(5),
 	}
 	r := mux.NewRouter().StrictSlash(true)
 	r.HandleFunc("/", s.getHomePage)
@@ -43,6 +46,7 @@ func NewServer(store *storage.Store, ver string, level logging.Level) *Server {
 	r.HandleFunc("/whois/action", s.submitWHOISForm)
 	r.HandleFunc("/whois/{uid}", s.getWHOISResults)
 	r.Use(s.loggingMiddleware)
+	r.Use(s.rateLimitingMiddleware)
 	s.r = r
 	return s
 }
@@ -71,6 +75,13 @@ func (serv *Server) loggingMiddleware(next http.Handler) http.Handler {
 		uri := r.RequestURI
 		proto := r.Proto
 		serv.logger.Infof("%s \"%s %s %s\"", ip, method, uri, proto)
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (serv *Server) rateLimitingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		serv.rl.Take()
 		next.ServeHTTP(w, r)
 	})
 }
