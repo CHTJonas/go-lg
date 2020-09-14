@@ -1,6 +1,6 @@
 module github.com/chtjonas/go-lg
 
-go 1.14
+go 1.15
 
 require (
 	github.com/cbroglie/mustache v1.2.0
