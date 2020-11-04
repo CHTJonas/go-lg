@@ -16,6 +16,9 @@ format:
 build/assets:
 	go-bindata -o internal/assets/assets.go -pkg assets assets/
 
+build/default: build/assets
+	$(GOBUILD) -o bin/default/go-lg cmd/go-lg/main.go
+
 build/linux/armv7: build/assets
 	export GOOS=linux
 	export GOARCH=arm
@@ -60,3 +63,6 @@ clean:
 	@rm -rf internal/assets
 
 all: dir format build
+
+dev: dir format build/default
+	bin/default/go-lg
