@@ -1,10 +1,10 @@
 # Go-Looking Glass
 
-go-lg is a web-based network looking glass that's written in Go. Like other looking glasses it allows you to ping remote hosts and perform traceroutes. Unlike other looking glasses it also produces reports with a unique URL that can be shared with your colleagues or friends.
+go-lg is a web-based network looking glass that's written in Go. Like other looking glasses it allows you to ping remote hosts and perform traceroutes. Unlike other looking glasses it also produces reports with a unique persistent URL that can be shared with your colleagues or friends.
 
 ## Usage
 
-go-lg is compiled into a single static binary and there is no configuration to worry about. All reports are stored in an embedded [BadgerDB](https://github.com/dgraph-io/badger) database and web assets are compiled into the binary itself. It is expected that go-lg will be run behind a reverse proxy such as nginx.
+go-lg is compiled into a single static binary and there is no configuration to worry about. All reports are stored in an embedded [BadgerDB](https://github.com/dgraph-io/badger) database and web assets are compiled into the binary itself. It's expected that go-lg will be run behind a reverse proxy such as nginx which will take care of things like TLS.
 
 ## Compiling
 
@@ -19,6 +19,6 @@ make clean && make all
 
 ### Copyright
 
-pingflux is licensed under the [BSD 2-Clause License](https://opensource.org/licenses/BSD-2-Clause).
+go-lg is licensed under the [BSD 2-Clause License](https://opensource.org/licenses/BSD-2-Clause).
 
 Copyright (c) 2020 Charlie Jonas.
