@@ -12,6 +12,8 @@ $ go-lg --help
 Usage of go-lg:
   --data-dir string
     	path to database storage directory (default "/var/lib/go-lg")
+  --verbosity int
+    	logging verbosity (default 2)
 ```
 
 ## Compiling

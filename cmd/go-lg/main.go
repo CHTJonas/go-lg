@@ -16,16 +16,18 @@ import (
 
 var ver string
 var path string
+var verbosity int
 
 const loggingPrefix string = "app"
 
 func init() {
 	flag.StringVar(&path, "data-dir", "/var/lib/go-lg", "path to database storage directory")
+	flag.IntVar(&verbosity, "verbosity", 2, "logging verbosity")
 	flag.Parse()
 }
 
 func main() {
-	logLevel := logging.INFO
+	logLevel := logging.Level(verbosity)
 	applicationLogger := logging.NewPrefixedLogger(loggingPrefix, logLevel)
 	applicationLogger.Infof("go-lg version %s starting up...", ver)
 	defer applicationLogger.Infof("go-lg will now exit...")
