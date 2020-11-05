@@ -15,6 +15,7 @@ func NewStore(path string, level logging.Level) *Store {
 	store := &Store{}
 	logger := logging.NewPrefixedLogger(loggingPrefix, level)
 	opts := badger.DefaultOptions(path).WithLogger(logger)
+	logger.Infof("Opening database at %s...", path)
 	db, err := badger.Open(opts)
 	if err != nil {
 		panic(err)

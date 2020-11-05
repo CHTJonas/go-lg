@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"net/http"
 	"os"
@@ -14,8 +15,14 @@ import (
 )
 
 var ver string
+var path string
 
 const loggingPrefix string = "app"
+
+func init() {
+	flag.StringVar(&path, "data-dir", "/var/lib/go-lg", "path to database storage directory")
+	flag.Parse()
+}
 
 func main() {
 	logLevel := logging.INFO
@@ -23,7 +30,7 @@ func main() {
 	applicationLogger.Infof("go-lg version %s starting up...", ver)
 	defer applicationLogger.Infof("go-lg will now exit...")
 
-	store := storage.NewStore("/tmp/badger", logLevel)
+	store := storage.NewStore(path, logLevel)
 	defer store.Close()
 
 	serv := web.NewServer(store, ver, logLevel)

@@ -4,7 +4,15 @@ go-lg is a web-based network looking glass that's written in Go. Like other look
 
 ## Usage
 
-go-lg is compiled into a single static binary and there is no configuration to worry about. All reports are stored in an embedded [BadgerDB](https://github.com/dgraph-io/badger) database and web assets are compiled into the binary itself. It's expected that go-lg will be run behind a reverse proxy such as nginx which will take care of things like TLS.
+go-lg is compiled into a single static binary and there is minimal configuration to worry about. All reports are stored in an embedded [BadgerDB](https://github.com/dgraph-io/badger) database and web assets are compiled into the binary itself. It's expected that go-lg will be run behind a reverse proxy such as nginx which will take care of things like TLS.
+
+```
+$ go-lg --help
+
+Usage of go-lg:
+  --data-dir string
+    	path to database storage directory (default "/var/lib/go-lg")
+```
 
 ## Compiling
 

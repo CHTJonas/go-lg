@@ -65,4 +65,4 @@ clean:
 all: dir format build
 
 dev: dir format build/default
-	bin/default/go-lg
+	bin/default/go-lg --data-dir /tmp/badger
