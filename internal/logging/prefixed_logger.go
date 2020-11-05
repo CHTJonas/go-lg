@@ -29,24 +29,24 @@ func NewPrefixedLogger(prefix string, level Level) *PrefixedLogger {
 
 func (l *PrefixedLogger) Errorf(f string, v ...interface{}) {
 	if l.Level >= ERROR {
-		l.Printf("ERROR: "+f, v...)
+		l.Printf(f, v...)
 	}
 }
 
 func (l *PrefixedLogger) Warningf(f string, v ...interface{}) {
 	if l.Level >= WARNING {
-		l.Printf("WARNING: "+f, v...)
+		l.Printf(f, v...)
 	}
 }
 
 func (l *PrefixedLogger) Infof(f string, v ...interface{}) {
 	if l.Level >= INFO {
-		l.Printf("INFO: "+f, v...)
+		l.Printf(f, v...)
 	}
 }
 
 func (l *PrefixedLogger) Debugf(f string, v ...interface{}) {
 	if l.Level >= DEBUG {
-		l.Printf("DEBUG: "+f, v...)
+		l.Printf(f, v...)
 	}
 }
