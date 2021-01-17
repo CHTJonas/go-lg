@@ -17,22 +17,22 @@ import (
 )
 
 type Server struct {
-	r      *mux.Router
-	s      *storage.Store
-	srv    *http.Server
-	ver    string
-	logger *logging.PrefixedLogger
-	rl     ratelimit.Limiter
+	r       *mux.Router
+	s       *storage.Store
+	srv     *http.Server
+	version string
+	logger  *logging.PrefixedLogger
+	rl      ratelimit.Limiter
 }
 
 const loggingPrefix string = "http"
 
-func NewServer(store *storage.Store, ver string, level logging.Level) *Server {
+func NewServer(store *storage.Store, version string, level logging.Level) *Server {
 	s := &Server{
-		s:      store,
-		ver:    ver,
-		logger: logging.NewPrefixedLogger(loggingPrefix, level),
-		rl:     ratelimit.New(5),
+		s:       store,
+		version: version,
+		logger:  logging.NewPrefixedLogger(loggingPrefix, level),
+		rl:      ratelimit.New(5),
 	}
 	r := mux.NewRouter().StrictSlash(true)
 	r.HandleFunc("/", s.getHomePage)
@@ -89,7 +89,7 @@ func (serv *Server) rateLimitingMiddleware(next http.Handler) http.Handler {
 func (serv *Server) getHomePage(w http.ResponseWriter, r *http.Request) {
 	partial, _ := assets.Asset("assets/home.html.mustache")
 	layout, _ := assets.Asset("assets/layout.html.mustache")
-	context := map[string]string{"title": "Home Page", "version": serv.ver}
+	context := map[string]string{"title": "Home Page", "version": serv.version}
 	str, _ := mustache.RenderInLayout(string(partial), string(layout), context)
 	fmt.Fprint(w, str)
 }
