@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"github.com/chtjonas/go-lg/internal/logging"
+	"github.com/CHTJonas/go-lg/internal/logging"
 	"github.com/dgraph-io/badger"
 )
 

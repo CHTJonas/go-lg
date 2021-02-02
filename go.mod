@@ -1,4 +1,4 @@
-module github.com/chtjonas/go-lg
+module github.com/CHTJonas/go-lg
 
 go 1.15
 

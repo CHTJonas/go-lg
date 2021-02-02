@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/CHTJonas/go-lg/internal/assets"
+	"github.com/CHTJonas/go-lg/internal/logging"
+	"github.com/CHTJonas/go-lg/internal/storage"
 	"github.com/cbroglie/mustache"
-	"github.com/chtjonas/go-lg/internal/assets"
-	"github.com/chtjonas/go-lg/internal/logging"
-	"github.com/chtjonas/go-lg/internal/storage"
 	"github.com/gorilla/mux"
 	"go.uber.org/ratelimit"
 )

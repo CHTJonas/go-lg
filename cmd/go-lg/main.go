@@ -9,9 +9,9 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/chtjonas/go-lg/internal/logging"
-	"github.com/chtjonas/go-lg/internal/storage"
-	"github.com/chtjonas/go-lg/internal/web"
+	"github.com/CHTJonas/go-lg/internal/logging"
+	"github.com/CHTJonas/go-lg/internal/storage"
+	"github.com/CHTJonas/go-lg/internal/web"
 )
 
 const loggingPrefix string = "app"
