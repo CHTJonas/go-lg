@@ -7,6 +7,6 @@ require (
 	github.com/dgraph-io/badger v1.6.2
 	github.com/gorilla/mux v1.8.0
 	github.com/shuLhan/go-bindata v4.0.0+incompatible // indirect
-	github.com/spf13/cobra v1.0.0
+	github.com/spf13/cobra v1.1.2
 	go.uber.org/ratelimit v0.1.0
 )
