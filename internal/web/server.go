@@ -35,6 +35,7 @@ func NewServer(store *storage.Store, version string, level logging.Level) *Serve
 		rl:      ratelimit.New(5),
 	}
 	r := mux.NewRouter().StrictSlash(true)
+	r.PathPrefix("/static/").Handler(assets.Server())
 	r.HandleFunc("/", s.getHomePage)
 	r.HandleFunc("/ping", s.getPingForm)
 	r.HandleFunc("/ping/action", s.submitPingForm)
