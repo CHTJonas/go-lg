@@ -1,9 +1,6 @@
 # Build artefacts
 /bin
 
-# Embedded asset code
-/internal/assets/*.go
-
 # Binaries for programs and plugins
 *.exe
 *.exe~
