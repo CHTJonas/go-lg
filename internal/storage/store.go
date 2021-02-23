@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"strings"
+
 	"github.com/CHTJonas/go-lg/internal/logging"
 	"github.com/dgraph-io/badger"
 )
@@ -48,4 +50,10 @@ func (store *Store) Write(prefix string, data []byte) (string, error) {
 	return uid, store.db.Update(func(txn *badger.Txn) error {
 		return txn.Set([]byte(prefix+uid), data)
 	})
+}
+
+func (store *Store) TrimWrite(prefix string, data []byte) (string, error) {
+	str := string(data)
+	trm := strings.TrimSpace(str)
+	return store.Write(prefix, []byte(trm))
 }

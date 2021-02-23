@@ -115,7 +115,7 @@ func (serv *Server) submitPingForm(w http.ResponseWriter, r *http.Request) {
 		cmd = exec.Command("ping", "-c", "4", target)
 	}
 	stdout, _ := cmd.Output()
-	uid, _ := serv.s.Write("ping", stdout)
+	uid, _ := serv.s.TrimWrite("ping", stdout)
 	redirect("ping", uid, w, r)
 }
 
@@ -153,7 +153,7 @@ func (serv *Server) submitTracerouteForm(w http.ResponseWriter, r *http.Request)
 		cmd = exec.Command("mtr", "-c", "4", "-bez", "-w", target)
 	}
 	stdout, _ := cmd.Output()
-	uid, _ := serv.s.Write("traceroute", stdout)
+	uid, _ := serv.s.TrimWrite("traceroute", stdout)
 	redirect("traceroute", uid, w, r)
 }
 
@@ -183,7 +183,7 @@ func (serv *Server) submitWHOISForm(w http.ResponseWriter, r *http.Request) {
 	target := r.URL.Query().Get("target")
 	cmd := exec.Command("whois", target)
 	stdout, _ := cmd.Output()
-	uid, _ := serv.s.Write("whois", stdout)
+	uid, _ := serv.s.TrimWrite("whois", stdout)
 	redirect("whois", uid, w, r)
 }
 
