@@ -6,7 +6,7 @@ GO=$(shell which go)
 GOGET=$(GO) get
 GOMOD=$(GO) mod
 GOFMT=$(GO) fmt
-GOBUILD=$(GO) build -trimpath -mod=readonly -ldflags "-X main.version=$(VER)"
+GOBUILD=$(GO) build -trimpath -mod=readonly -ldflags "-X main.version=$(VER) -s -w -buildid="
 
 dir:
 	@if [ ! -d bin ]; then mkdir -p bin; fi
