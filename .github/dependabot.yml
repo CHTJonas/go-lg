@@ -1,0 +1,14 @@
+version: 2
+updates:
+- package-ecosystem: gomod
+  directory: "/"
+  schedule:
+    interval: daily
+    time: "09:00"
+    timezone: Europe/London
+  open-pull-requests-limit: 99
+  ignore:
+  - dependency-name: github.com/spf13/cobra
+    versions:
+    - 1.1.1
+    - 1.1.2
