@@ -46,6 +46,9 @@ func NewServer(store *storage.Store, version string, level logging.Level) *Serve
 	r.HandleFunc("/whois", s.getWHOISForm)
 	r.HandleFunc("/whois/action", s.submitWHOISForm)
 	r.HandleFunc("/whois/{uid}", s.getWHOISResults)
+	r.HandleFunc("/host", s.getHostForm)
+	r.HandleFunc("/host/action", s.submitHostForm)
+	r.HandleFunc("/host/{uid}", s.getHostResults)
 	r.HandleFunc("/robots.txt", s.getRobotsTXT)
 	r.Use(s.loggingMiddleware)
 	r.Use(s.rateLimitingMiddleware)
@@ -202,11 +205,42 @@ func (serv *Server) getWHOISResults(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, str)
 }
 
+func (serv *Server) getHostForm(w http.ResponseWriter, r *http.Request) {
+	partial, _ := assets.ReadFile("form.html.mustache")
+	layout, _ := assets.ReadFile("layout.html.mustache")
+	context := map[string]string{"title": "Host Report", "submissionURL": "/host/action", "placeholder": "Hostname"}
+	str, _ := mustache.RenderInLayout(string(partial), string(layout), context)
+	fmt.Fprint(w, str)
+}
+
+func (serv *Server) submitHostForm(w http.ResponseWriter, r *http.Request) {
+	target := r.URL.Query().Get("target")
+	cmd := exec.Command("host", target)
+	stdout, _ := cmd.Output()
+	uid, _ := serv.s.TrimWrite("host", stdout)
+	redirect("host", uid, w, r)
+}
+
+func (serv *Server) getHostResults(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	stdout := serv.s.Read("host", vars["uid"])
+	if len(stdout) == 0 {
+		stdout = []byte("HTTP 404 Report Not Found")
+		w.WriteHeader(http.StatusNotFound)
+	}
+	partial, _ := assets.ReadFile("form.html.mustache")
+	layout, _ := assets.ReadFile("layout.html.mustache")
+	context := map[string]string{"title": "Host Report", "code": string(stdout), "submissionURL": "/host/action", "placeholder": "Hostname"}
+	str, _ := mustache.RenderInLayout(string(partial), string(layout), context)
+	fmt.Fprint(w, str)
+}
+
 func (serv *Server) getRobotsTXT(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "User-agent: *")
 	fmt.Fprintln(w, "Disallow: /ping/*")
 	fmt.Fprintln(w, "Disallow: /traceroute/*")
 	fmt.Fprintln(w, "Disallow: /whois/*")
+	fmt.Fprintln(w, "Disallow: /host/*")
 }
 
 func redirect(base string, uid string, w http.ResponseWriter, r *http.Request) {
