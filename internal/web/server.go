@@ -46,6 +46,7 @@ func NewServer(store *storage.Store, version string, level logging.Level) *Serve
 	r.HandleFunc("/whois", s.getWHOISForm)
 	r.HandleFunc("/whois/action", s.submitWHOISForm)
 	r.HandleFunc("/whois/{uid}", s.getWHOISResults)
+	r.HandleFunc("/robots.txt", s.getRobotsTXT)
 	r.Use(s.loggingMiddleware)
 	r.Use(s.rateLimitingMiddleware)
 	s.r = r
@@ -199,6 +200,13 @@ func (serv *Server) getWHOISResults(w http.ResponseWriter, r *http.Request) {
 	context := map[string]string{"title": "WHOIS Report", "code": string(stdout), "submissionURL": "/whois/action", "placeholder": "Query name"}
 	str, _ := mustache.RenderInLayout(string(partial), string(layout), context)
 	fmt.Fprint(w, str)
+}
+
+func (serv *Server) getRobotsTXT(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, "User-agent: *")
+	fmt.Fprintln(w, "Disallow: /ping/*")
+	fmt.Fprintln(w, "Disallow: /traceroute/*")
+	fmt.Fprintln(w, "Disallow: /whois/*")
 }
 
 func redirect(base string, uid string, w http.ResponseWriter, r *http.Request) {
