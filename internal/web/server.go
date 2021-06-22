@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"os/exec"
-	"strings"
 	"time"
 
 	"github.com/CHTJonas/go-lg/assets"
@@ -71,24 +70,6 @@ func (serv *Server) Start(addr string) error {
 func (serv *Server) Stop(ctx context.Context) error {
 	serv.srv.SetKeepAlivesEnabled(false)
 	return serv.srv.Shutdown(ctx)
-}
-
-func (serv *Server) loggingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ip := strings.Split(r.RemoteAddr, ":")[0]
-		method := r.Method
-		uri := r.RequestURI
-		proto := r.Proto
-		serv.logger.Infof("%s \"%s %s %s\"", ip, method, uri, proto)
-		next.ServeHTTP(w, r)
-	})
-}
-
-func (serv *Server) rateLimitingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		serv.rl.Take()
-		next.ServeHTTP(w, r)
-	})
 }
 
 func (serv *Server) getHomePage(w http.ResponseWriter, r *http.Request) {
