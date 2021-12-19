@@ -42,7 +42,7 @@ var serverCmd = &cobra.Command{
 		signal.Notify(c, syscall.SIGTERM)
 		<-c
 		log.Println("Received shutdown signal!")
-		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 		log.Println("Waiting for server to exit...")
 		if err := serv.Stop(ctx); err != nil {
