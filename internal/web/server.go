@@ -51,6 +51,7 @@ func NewServer(store *storage.Store, version string, level logging.Level) *Serve
 	r.HandleFunc("/robots.txt", s.getRobotsTXT)
 	r.Use(s.loggingMiddleware)
 	r.Use(serverHeaderMiddleware)
+	r.Use(proxyMiddleware)
 	r.Use(s.rateLimitingMiddleware)
 	s.r = r
 	return s

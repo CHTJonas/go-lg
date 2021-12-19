@@ -3,6 +3,8 @@ package web
 import (
 	"net/http"
 	"strings"
+
+	"github.com/gorilla/handlers"
 )
 
 type loggingResponseWriter struct {
@@ -39,4 +41,8 @@ func serverHeaderMiddleware(next http.Handler) http.Handler {
 		w.Header().Set("X-Powered-By", "https://github.com/CHTJonas/go-lg")
 		next.ServeHTTP(w, r)
 	})
+}
+
+func proxyMiddleware(next http.Handler) http.Handler {
+	return handlers.ProxyHeaders(next)
 }
