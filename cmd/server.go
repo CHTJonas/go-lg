@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/CHTJonas/go-lg/internal/storage"
@@ -36,7 +37,9 @@ var serverCmd = &cobra.Command{
 		log.Println("Listening on", addr)
 
 		c := make(chan os.Signal, 1)
-		signal.Notify(c, os.Interrupt)
+		signal.Notify(c, syscall.SIGINT)
+		signal.Notify(c, syscall.SIGQUIT)
+		signal.Notify(c, syscall.SIGTERM)
 		<-c
 		log.Println("Received shutdown signal!")
 		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
