@@ -33,3 +33,10 @@ func (serv *Server) rateLimitingMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+
+func serverHeaderMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Powered-By", "https://github.com/CHTJonas/go-lg")
+		next.ServeHTTP(w, r)
+	})
+}
