@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -26,5 +27,7 @@ func init() {
 }
 
 func initConfig() {
-	// TODO
+	if os.Getenv("JOURNAL_STREAM") != "" {
+		log.Default().SetFlags(0)
+	}
 }

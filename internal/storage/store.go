@@ -1,9 +1,9 @@
 package storage
 
 import (
+	"log"
 	"strings"
 
-	"github.com/CHTJonas/go-lg/internal/logging"
 	"github.com/dgraph-io/badger"
 )
 
@@ -11,13 +11,10 @@ type Store struct {
 	db *badger.DB
 }
 
-const loggingPrefix string = "db"
-
-func NewStore(path string, level logging.Level) *Store {
+func NewStore(path string) *Store {
 	store := &Store{}
-	logger := logging.NewPrefixedLogger(loggingPrefix, level)
-	opts := badger.DefaultOptions(path).WithLogger(logger)
-	logger.Infof("Opening database at %s...", path)
+	opts := badger.DefaultOptions(path).WithLogger(&DBLogger{INFO})
+	log.Printf("Opening database at %s...\n", path)
 	db, err := badger.Open(opts)
 	if err != nil {
 		panic(err)

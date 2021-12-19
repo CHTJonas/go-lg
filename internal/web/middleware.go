@@ -1,6 +1,7 @@
 package web
 
 import (
+	"log"
 	"net/http"
 	"strings"
 
@@ -25,7 +26,7 @@ func (serv *Server) loggingMiddleware(next http.Handler) http.Handler {
 		method := r.Method
 		uri := r.RequestURI
 		proto := r.Proto
-		serv.logger.Infof("%s \"%s %s %s\" %d", ip, method, uri, proto, lrw.statusCode)
+		log.Printf("%s \"%s %s %s\" %d\n", ip, method, uri, proto, lrw.statusCode)
 	})
 }
 

@@ -16,7 +16,6 @@ Flags:
   -b, --bind string     address and port to bind to (default "localhost:8080")
   -h, --help            help for server
   -p, --path string     path to database storage directory (default "/var/lib/go-lg")
-  -v, --verbosity int   logging verbosity (default 2)
 ```
 
 ## Compiling

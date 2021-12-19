@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/CHTJonas/go-lg/assets"
-	"github.com/CHTJonas/go-lg/internal/logging"
 	"github.com/CHTJonas/go-lg/internal/storage"
 	"github.com/cbroglie/mustache"
 	"github.com/gorilla/mux"
@@ -20,17 +19,13 @@ type Server struct {
 	s       *storage.Store
 	srv     *http.Server
 	version string
-	logger  *logging.PrefixedLogger
 	rl      ratelimit.Limiter
 }
 
-const loggingPrefix string = "http"
-
-func NewServer(store *storage.Store, version string, level logging.Level) *Server {
+func NewServer(store *storage.Store, version string) *Server {
 	s := &Server{
 		s:       store,
 		version: version,
-		logger:  logging.NewPrefixedLogger(loggingPrefix, level),
 		rl:      ratelimit.New(5),
 	}
 	r := mux.NewRouter().StrictSlash(true)
@@ -64,7 +59,6 @@ func (serv *Server) Start(addr string) error {
 		WriteTimeout: time.Second * 60,
 		ReadTimeout:  time.Second * 60,
 		IdleTimeout:  time.Second * 90,
-		ErrorLog:     serv.logger.Logger,
 	}
 	return serv.srv.ListenAndServe()
 }
