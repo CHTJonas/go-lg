@@ -18,7 +18,7 @@ var path string
 var addr string
 
 var serverCmd = &cobra.Command{
-	Use:   "server",
+	Use:   "serve",
 	Short: "Run web server",
 	Long:  "",
 	Run: func(cmd *cobra.Command, args []string) {
