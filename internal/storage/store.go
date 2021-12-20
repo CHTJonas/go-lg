@@ -17,7 +17,7 @@ func NewStore(path string) *Store {
 	log.Printf("Opening database at %s...\n", path)
 	db, err := badger.Open(opts)
 	if err != nil {
-		panic(err)
+		log.Fatalln("Error opening database:", err.Error())
 	}
 	store.db = db
 	return store
