@@ -1,9 +1,10 @@
 package web
 
 import (
+	"fmt"
 	"log"
+	"net"
 	"net/http"
-	"strings"
 
 	"github.com/gorilla/handlers"
 )
@@ -22,11 +23,20 @@ func (serv *Server) loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		lrw := &loggingResponseWriter{w, http.StatusOK}
 		next.ServeHTTP(lrw, r)
-		ip := strings.Split(r.RemoteAddr, ":")[0]
-		method := r.Method
-		uri := r.RequestURI
-		proto := r.Proto
-		log.Printf("%s \"%s %s %s\" %d\n", ip, method, uri, proto, lrw.statusCode)
+		addr, _, err := net.SplitHostPort(r.RemoteAddr)
+		if err != nil {
+			addr = r.RemoteAddr
+		}
+		httpInfo := fmt.Sprintf("\"%s %s %s\"", r.Method, r.URL.Path, r.Proto)
+		refererInfo := fmt.Sprintf("\"%s\"", r.Referer())
+		if refererInfo == "\"\"" {
+			refererInfo = "\"-\""
+		}
+		uaInfo := fmt.Sprintf("\"%s\"", r.UserAgent())
+		if uaInfo == "\"\"" {
+			uaInfo = "\"-\""
+		}
+		log.Println(addr, httpInfo, lrw.statusCode, refererInfo, uaInfo)
 	})
 }
 
