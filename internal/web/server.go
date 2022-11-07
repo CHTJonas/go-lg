@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/CHTJonas/go-lg/assets"
@@ -43,6 +44,9 @@ func NewServer(store *storage.Store, version string) *Server {
 	r.HandleFunc("/host", s.getHostForm)
 	r.HandleFunc("/host/action", s.submitHostForm)
 	r.HandleFunc("/host/{uid}", s.getHostResults)
+	r.HandleFunc("/dig", s.getDigForm)
+	r.HandleFunc("/dig/action", s.submitDigForm)
+	r.HandleFunc("/dig/{uid}", s.getDigResults)
 	r.HandleFunc("/robots.txt", s.getRobotsTXT)
 	r.Use(s.loggingMiddleware)
 	r.Use(serverHeaderMiddleware)
@@ -212,12 +216,43 @@ func (serv *Server) getHostResults(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, str)
 }
 
+func (serv *Server) getDigForm(w http.ResponseWriter, r *http.Request) {
+	partial, _ := assets.ReadFile("form.html.mustache")
+	layout, _ := assets.ReadFile("layout.html.mustache")
+	context := map[string]string{"title": "DIG Report", "submissionURL": "/dig/action", "placeholder": "Query"}
+	str, _ := mustache.RenderInLayout(string(partial), string(layout), context)
+	fmt.Fprint(w, str)
+}
+
+func (serv *Server) submitDigForm(w http.ResponseWriter, r *http.Request) {
+	target := r.URL.Query().Get("target")
+	cmd := exec.Command("dig", strings.Split(target, " ")...)
+	stdout, _ := cmd.Output()
+	uid, _ := serv.s.TrimWrite("dig", stdout)
+	redirect("dig", uid, w, r)
+}
+
+func (serv *Server) getDigResults(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	stdout := serv.s.Read("dig", vars["uid"])
+	if len(stdout) == 0 {
+		stdout = []byte("HTTP 404 Report Not Found")
+		w.WriteHeader(http.StatusNotFound)
+	}
+	partial, _ := assets.ReadFile("form.html.mustache")
+	layout, _ := assets.ReadFile("layout.html.mustache")
+	context := map[string]string{"title": "DIG Report", "code": string(stdout), "submissionURL": "/dig/action", "placeholder": "Query"}
+	str, _ := mustache.RenderInLayout(string(partial), string(layout), context)
+	fmt.Fprint(w, str)
+}
+
 func (serv *Server) getRobotsTXT(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "User-agent: *")
 	fmt.Fprintln(w, "Disallow: /ping/*")
 	fmt.Fprintln(w, "Disallow: /traceroute/*")
 	fmt.Fprintln(w, "Disallow: /whois/*")
 	fmt.Fprintln(w, "Disallow: /host/*")
+	fmt.Fprintln(w, "Disallow: /dig/*")
 }
 
 func redirect(base string, uid string, w http.ResponseWriter, r *http.Request) {
