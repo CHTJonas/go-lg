@@ -83,7 +83,7 @@ func (serv *Server) getHomePage(w http.ResponseWriter, r *http.Request) {
 func (serv *Server) getPingForm(w http.ResponseWriter, r *http.Request) {
 	partial, _ := assets.ReadFile("form.html.mustache")
 	layout, _ := assets.ReadFile("layout.html.mustache")
-	context := map[string]string{"title": "Ping Report", "submissionURL": "/ping/action", "placeholder": "Target hostname or IP", "checkboxes": "yes"}
+	context := map[string]string{"title": "Ping Report", "submissionURL": "/ping/action", "placeholder": "Hostname or IP", "checkboxes": "yes"}
 	str, _ := mustache.RenderInLayout(string(partial), string(layout), context)
 	fmt.Fprint(w, str)
 }
@@ -113,7 +113,7 @@ func (serv *Server) getPingResults(w http.ResponseWriter, r *http.Request) {
 	}
 	partial, _ := assets.ReadFile("form.html.mustache")
 	layout, _ := assets.ReadFile("layout.html.mustache")
-	context := map[string]string{"title": "Ping Report", "code": string(stdout), "submissionURL": "/ping/action", "placeholder": "Target hostname or IP", "checkboxes": "yes"}
+	context := map[string]string{"title": "Ping Report", "code": string(stdout), "submissionURL": "/ping/action", "placeholder": "Hostname or IP", "checkboxes": "yes"}
 	str, _ := mustache.RenderInLayout(string(partial), string(layout), context)
 	fmt.Fprint(w, str)
 }
@@ -121,7 +121,7 @@ func (serv *Server) getPingResults(w http.ResponseWriter, r *http.Request) {
 func (serv *Server) getTracerouteForm(w http.ResponseWriter, r *http.Request) {
 	partial, _ := assets.ReadFile("form.html.mustache")
 	layout, _ := assets.ReadFile("layout.html.mustache")
-	context := map[string]string{"title": "Traceroute Report", "submissionURL": "/traceroute/action", "placeholder": "Target hostname or IP", "checkboxes": "yes"}
+	context := map[string]string{"title": "Traceroute Report", "submissionURL": "/traceroute/action", "placeholder": "Hostname or IP", "checkboxes": "yes"}
 	str, _ := mustache.RenderInLayout(string(partial), string(layout), context)
 	fmt.Fprint(w, str)
 }
@@ -151,7 +151,7 @@ func (serv *Server) getTracerouteResults(w http.ResponseWriter, r *http.Request)
 	}
 	partial, _ := assets.ReadFile("form.html.mustache")
 	layout, _ := assets.ReadFile("layout.html.mustache")
-	context := map[string]string{"title": "Traceroute Report", "code": string(stdout), "submissionURL": "/traceroute/action", "placeholder": "Target hostname or IP", "checkboxes": "yes"}
+	context := map[string]string{"title": "Traceroute Report", "code": string(stdout), "submissionURL": "/traceroute/action", "placeholder": "Hostname or IP", "checkboxes": "yes"}
 	str, _ := mustache.RenderInLayout(string(partial), string(layout), context)
 	fmt.Fprint(w, str)
 }
@@ -159,7 +159,7 @@ func (serv *Server) getTracerouteResults(w http.ResponseWriter, r *http.Request)
 func (serv *Server) getWHOISForm(w http.ResponseWriter, r *http.Request) {
 	partial, _ := assets.ReadFile("form.html.mustache")
 	layout, _ := assets.ReadFile("layout.html.mustache")
-	context := map[string]string{"title": "WHOIS Report", "submissionURL": "/whois/action", "placeholder": "Query name"}
+	context := map[string]string{"title": "WHOIS Report", "submissionURL": "/whois/action", "placeholder": "Query"}
 	str, _ := mustache.RenderInLayout(string(partial), string(layout), context)
 	fmt.Fprint(w, str)
 }
@@ -181,7 +181,7 @@ func (serv *Server) getWHOISResults(w http.ResponseWriter, r *http.Request) {
 	}
 	partial, _ := assets.ReadFile("form.html.mustache")
 	layout, _ := assets.ReadFile("layout.html.mustache")
-	context := map[string]string{"title": "WHOIS Report", "code": string(stdout), "submissionURL": "/whois/action", "placeholder": "Query name"}
+	context := map[string]string{"title": "WHOIS Report", "code": string(stdout), "submissionURL": "/whois/action", "placeholder": "Query"}
 	str, _ := mustache.RenderInLayout(string(partial), string(layout), context)
 	fmt.Fprint(w, str)
 }
@@ -189,7 +189,7 @@ func (serv *Server) getWHOISResults(w http.ResponseWriter, r *http.Request) {
 func (serv *Server) getHostForm(w http.ResponseWriter, r *http.Request) {
 	partial, _ := assets.ReadFile("form.html.mustache")
 	layout, _ := assets.ReadFile("layout.html.mustache")
-	context := map[string]string{"title": "Host Report", "submissionURL": "/host/action", "placeholder": "Hostname"}
+	context := map[string]string{"title": "Host Report", "submissionURL": "/host/action", "placeholder": "Hostname or IP"}
 	str, _ := mustache.RenderInLayout(string(partial), string(layout), context)
 	fmt.Fprint(w, str)
 }
@@ -211,7 +211,7 @@ func (serv *Server) getHostResults(w http.ResponseWriter, r *http.Request) {
 	}
 	partial, _ := assets.ReadFile("form.html.mustache")
 	layout, _ := assets.ReadFile("layout.html.mustache")
-	context := map[string]string{"title": "Host Report", "code": string(stdout), "submissionURL": "/host/action", "placeholder": "Hostname"}
+	context := map[string]string{"title": "Host Report", "code": string(stdout), "submissionURL": "/host/action", "placeholder": "Hostname or IP"}
 	str, _ := mustache.RenderInLayout(string(partial), string(layout), context)
 	fmt.Fprint(w, str)
 }
