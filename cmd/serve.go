@@ -20,7 +20,6 @@ var addr string
 var serverCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "Run web server",
-	Long:  "",
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Println("go-lg version", version)
 

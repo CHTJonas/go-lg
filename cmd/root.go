@@ -10,8 +10,7 @@ import (
 
 var rootCmd = &cobra.Command{
 	Use:   "go-lg",
-	Short: "Network looking glass featuring reports with sharable URLs",
-	Long:  "",
+	Short: "Web-based network looking glass featuring reports with sharable URLs",
 }
 
 func Execute(v string) {
