@@ -196,7 +196,7 @@ func (serv *Server) getHostForm(w http.ResponseWriter, r *http.Request) {
 
 func (serv *Server) submitHostForm(w http.ResponseWriter, r *http.Request) {
 	target := r.URL.Query().Get("target")
-	cmd := exec.Command("host", target)
+	cmd := exec.Command("host", strings.Split(target, " ")...)
 	stdout, _ := cmd.Output()
 	uid, _ := serv.s.TrimWrite("host", stdout)
 	redirect("host", uid, w, r)
