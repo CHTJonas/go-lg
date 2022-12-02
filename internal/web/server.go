@@ -248,11 +248,7 @@ func (serv *Server) getDigResults(w http.ResponseWriter, r *http.Request) {
 
 func (serv *Server) getRobotsTXT(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "User-agent: *")
-	fmt.Fprintln(w, "Disallow: /ping/*")
-	fmt.Fprintln(w, "Disallow: /traceroute/*")
-	fmt.Fprintln(w, "Disallow: /whois/*")
-	fmt.Fprintln(w, "Disallow: /host/*")
-	fmt.Fprintln(w, "Disallow: /dig/*")
+	fmt.Fprintln(w, "Disallow: /")
 }
 
 func redirect(base string, uid string, w http.ResponseWriter, r *http.Request) {
