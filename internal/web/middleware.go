@@ -5,6 +5,8 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"runtime"
+	"strings"
 
 	"github.com/gorilla/handlers"
 )
@@ -47,11 +49,15 @@ func (serv *Server) rateLimitingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func serverHeaderMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("X-Powered-By", "https://github.com/CHTJonas/go-lg")
-		next.ServeHTTP(w, r)
-	})
+func serverHeaderMiddleware(version string) func(http.Handler) http.Handler {
+	pwrBy := fmt.Sprintf("go-lg/%s Go/%s (+https://github.com/CHTJonas/go-lg)",
+		version, strings.TrimPrefix(runtime.Version(), "go"))
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("X-Powered-By", pwrBy)
+			next.ServeHTTP(w, r)
+		})
+	}
 }
 
 func proxyMiddleware(next http.Handler) http.Handler {

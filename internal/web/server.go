@@ -49,7 +49,7 @@ func NewServer(store *storage.Store, version string) *Server {
 	r.HandleFunc("/dig/{uid}", s.getDigResults)
 	r.HandleFunc("/robots.txt", s.getRobotsTXT)
 	r.Use(s.loggingMiddleware)
-	r.Use(serverHeaderMiddleware)
+	r.Use(serverHeaderMiddleware(version))
 	r.Use(proxyMiddleware)
 	r.Use(s.rateLimitingMiddleware)
 	s.r = r
