@@ -90,6 +90,7 @@ func (serv *Server) getPingForm(w http.ResponseWriter, r *http.Request) {
 
 func (serv *Server) submitPingForm(w http.ResponseWriter, r *http.Request) {
 	target := r.URL.Query().Get("target")
+	target = strings.TrimSpace(target)
 	protocolVersion := r.URL.Query().Get("protocolVersion")
 	var cmd *exec.Cmd
 	if protocolVersion == "4" {
@@ -128,6 +129,7 @@ func (serv *Server) getTracerouteForm(w http.ResponseWriter, r *http.Request) {
 
 func (serv *Server) submitTracerouteForm(w http.ResponseWriter, r *http.Request) {
 	target := r.URL.Query().Get("target")
+	target = strings.TrimSpace(target)
 	protocolVersion := r.URL.Query().Get("protocolVersion")
 	var cmd *exec.Cmd
 	if protocolVersion == "4" {
@@ -166,6 +168,7 @@ func (serv *Server) getWHOISForm(w http.ResponseWriter, r *http.Request) {
 
 func (serv *Server) submitWHOISForm(w http.ResponseWriter, r *http.Request) {
 	target := r.URL.Query().Get("target")
+	target = strings.TrimSpace(target)
 	cmd := exec.Command("whois", target)
 	stdout, _ := cmd.Output()
 	uid, _ := serv.s.TrimWrite("whois", stdout)
@@ -196,6 +199,7 @@ func (serv *Server) getHostForm(w http.ResponseWriter, r *http.Request) {
 
 func (serv *Server) submitHostForm(w http.ResponseWriter, r *http.Request) {
 	target := r.URL.Query().Get("target")
+	target = strings.TrimSpace(target)
 	cmd := exec.Command("host", strings.Split(target, " ")...)
 	stdout, _ := cmd.Output()
 	uid, _ := serv.s.TrimWrite("host", stdout)
@@ -226,6 +230,7 @@ func (serv *Server) getDigForm(w http.ResponseWriter, r *http.Request) {
 
 func (serv *Server) submitDigForm(w http.ResponseWriter, r *http.Request) {
 	target := r.URL.Query().Get("target")
+	target = strings.TrimSpace(target)
 	cmd := exec.Command("dig", strings.Split(target, " ")...)
 	stdout, _ := cmd.Output()
 	uid, _ := serv.s.TrimWrite("dig", stdout)
