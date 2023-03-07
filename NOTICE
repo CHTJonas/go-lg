@@ -2,14 +2,14 @@ go-lg
 Copyright (c) 2020 Charlie Jonas
 All rights reserved.
 
-go-lg is licensed under a 2-clause BSD license and includes compiled code
+go-lg is licensed under the BSD 2-Clause License and includes compiled code
 from several well-known open source projects and initiatives. Third-party
 copyright notices are faithfully reproduced below for full attribution to the
 original authors and to comply with the license conditions.
 
 ---
 
-The Go programming language is licensed under a 3-clause BSD license.
+The Go programming language is licensed under the BSD 3-Clause License.
 
 Copyright (c) 2009 The Go Authors. All rights reserved.
 
@@ -246,8 +246,8 @@ The Badger package is licensed under the Apache License 2.0.
 
 ---
 
-The handlers package from the Gorilla toolkit is licensed under a 2-clause BSD
-license.
+The handlers package from the Gorilla toolkit is licensed under the BSD 2-Clause
+License.
 
 Copyright (c) 2013 The Gorilla Handlers Authors. All rights reserved.
 
@@ -274,8 +274,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ---
 
-The mux package from the Gorilla toolkit is licensed under a 3-clause BSD
-license.
+The mux package from the Gorilla toolkit is licensed under the BSD 3-Clause
+License.
 
 Copyright (c) 2012-2018 The Gorilla Authors. All rights reserved.
 
