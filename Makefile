@@ -68,8 +68,10 @@ build/windows: build/windows/amd64
 
 build: build/linux build/darwin build/windows
 
+license: dir
+	cp NOTICE bin/NOTICE
+
 clean:
 	@rm -rf bin
-	@rm -rf internal/assets
 
-all: format build
+all: format build license
