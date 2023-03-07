@@ -70,6 +70,7 @@ build: build/linux build/darwin build/windows
 
 license: dir
 	cp NOTICE bin/NOTICE
+	cp LICENSE bin/LICENSE
 
 clean:
 	@rm -rf bin
