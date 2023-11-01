@@ -133,7 +133,10 @@ func (serv *Server) submitPingForm(c echo.Context) error {
 	} else {
 		cmd = exec.Command("ping", "-c", "4", target)
 	}
-	stdout := run(cmd)
+	stdout, ok := run(cmd)
+	if !ok {
+		return echo.ErrInternalServerError
+	}
 	uid, _ := serv.s.TrimWrite("ping", stdout)
 	return redirect("ping", uid, c)
 }
@@ -142,7 +145,7 @@ func (serv *Server) getPingResults(c echo.Context) error {
 	uid := c.Param("uid")
 	stdout := serv.s.Read("ping", uid)
 	if len(stdout) == 0 {
-		return c.String(http.StatusNotFound, "HTTP 404 Report Not Found")
+		return echo.ErrNotFound
 	}
 	partial, _ := assets.ReadFile("form.html.mustache")
 	layout, _ := assets.ReadFile("layout.html.mustache")
@@ -171,7 +174,10 @@ func (serv *Server) submitTracerouteForm(c echo.Context) error {
 	} else {
 		cmd = exec.Command("mtr", "-c", "4", "-bez", "-w", target)
 	}
-	stdout := run(cmd)
+	stdout, ok := run(cmd)
+	if !ok {
+		return echo.ErrInternalServerError
+	}
 	uid, _ := serv.s.TrimWrite("traceroute", stdout)
 	return redirect("traceroute", uid, c)
 }
@@ -180,7 +186,7 @@ func (serv *Server) getTracerouteResults(c echo.Context) error {
 	uid := c.Param("uid")
 	stdout := serv.s.Read("traceroute", uid)
 	if len(stdout) == 0 {
-		return c.String(http.StatusNotFound, "HTTP 404 Report Not Found")
+		return echo.ErrNotFound
 	}
 	partial, _ := assets.ReadFile("form.html.mustache")
 	layout, _ := assets.ReadFile("layout.html.mustache")
@@ -201,7 +207,10 @@ func (serv *Server) submitWHOISForm(c echo.Context) error {
 	target := c.QueryParam("target")
 	target = strings.TrimSpace(target)
 	cmd := exec.Command("whois", target)
-	stdout := run(cmd)
+	stdout, ok := run(cmd)
+	if !ok {
+		return echo.ErrInternalServerError
+	}
 	uid, _ := serv.s.TrimWrite("whois", stdout)
 	return redirect("whois", uid, c)
 }
@@ -210,7 +219,7 @@ func (serv *Server) getWHOISResults(c echo.Context) error {
 	uid := c.Param("uid")
 	stdout := serv.s.Read("whois", uid)
 	if len(stdout) == 0 {
-		return c.String(http.StatusNotFound, "HTTP 404 Report Not Found")
+		return echo.ErrNotFound
 	}
 	partial, _ := assets.ReadFile("form.html.mustache")
 	layout, _ := assets.ReadFile("layout.html.mustache")
@@ -231,7 +240,10 @@ func (serv *Server) submitHostForm(c echo.Context) error {
 	target := c.QueryParam("target")
 	target = strings.TrimSpace(target)
 	cmd := exec.Command("host", strings.Split(target, " ")...)
-	stdout := run(cmd)
+	stdout, ok := run(cmd)
+	if !ok {
+		return echo.ErrInternalServerError
+	}
 	uid, _ := serv.s.TrimWrite("host", stdout)
 	return redirect("host", uid, c)
 }
@@ -240,7 +252,7 @@ func (serv *Server) getHostResults(c echo.Context) error {
 	uid := c.Param("uid")
 	stdout := serv.s.Read("host", uid)
 	if len(stdout) == 0 {
-		return c.String(http.StatusNotFound, "HTTP 404 Report Not Found")
+		return echo.ErrNotFound
 	}
 	partial, _ := assets.ReadFile("form.html.mustache")
 	layout, _ := assets.ReadFile("layout.html.mustache")
@@ -261,7 +273,10 @@ func (serv *Server) submitDigForm(c echo.Context) error {
 	target := c.QueryParam("target")
 	target = strings.TrimSpace(target)
 	cmd := exec.Command("dig", strings.Split(target, " ")...)
-	stdout := run(cmd)
+	stdout, ok := run(cmd)
+	if !ok {
+		return echo.ErrInternalServerError
+	}
 	uid, _ := serv.s.TrimWrite("dig", stdout)
 	return redirect("dig", uid, c)
 }
@@ -270,7 +285,7 @@ func (serv *Server) getDigResults(c echo.Context) error {
 	uid := c.Param("uid")
 	stdout := serv.s.Read("dig", uid)
 	if len(stdout) == 0 {
-		return c.String(http.StatusNotFound, "HTTP 404 Report Not Found")
+		return echo.ErrNotFound
 	}
 	partial, _ := assets.ReadFile("form.html.mustache")
 	layout, _ := assets.ReadFile("layout.html.mustache")

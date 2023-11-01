@@ -6,11 +6,11 @@ import (
 	"syscall"
 )
 
-func run(cmd *exec.Cmd) []byte {
+func run(cmd *exec.Cmd) ([]byte, bool) {
 	stdout, err := cmd.Output()
 	if err != nil {
-		log.Println("error executing command", cmd)
-		if exitErr, k := err.(*exec.ExitError); k {
+		log.Println("Failed to execute command", cmd)
+		if exitErr, ok := err.(*exec.ExitError); ok {
 			if exitErr.Exited() {
 				log.Printf("PID %d exited with code %d\n%s", exitErr.Pid(), exitErr.ExitCode(), string(exitErr.Stderr))
 			} else {
@@ -24,5 +24,5 @@ func run(cmd *exec.Cmd) []byte {
 			log.Println(err)
 		}
 	}
-	return stdout
+	return stdout, err == nil
 }
