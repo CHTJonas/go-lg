@@ -3,64 +3,120 @@ package web
 import (
 	"fmt"
 	"log"
-	"net"
 	"net/http"
 	"runtime"
+	"runtime/debug"
 	"strings"
+	"time"
 
-	"github.com/gorilla/handlers"
+	"github.com/google/uuid"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	"golang.org/x/time/rate"
 )
 
-type loggingResponseWriter struct {
-	http.ResponseWriter
-	statusCode int
-}
+var aboutURL string = "https://github.com/CHTJonas/go-lg"
+var runtimeVer string = strings.TrimPrefix(runtime.Version(), "go")
+var id = uuid.New()
 
-func (lrw *loggingResponseWriter) WriteHeader(code int) {
-	lrw.statusCode = code
-	lrw.ResponseWriter.WriteHeader(code)
-}
-
-func (serv *Server) loggingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		lrw := &loggingResponseWriter{w, http.StatusOK}
-		next.ServeHTTP(lrw, r)
-		addr, _, err := net.SplitHostPort(r.RemoteAddr)
-		if err != nil {
-			addr = r.RemoteAddr
+func requestIDMiddleware() echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			c.Request().Header.Set("X-Request-Id", id.String())
+			return next(c)
 		}
-		httpInfo := fmt.Sprintf("\"%s %s %s\"", r.Method, r.URL.Path, r.Proto)
-		refererInfo := fmt.Sprintf("\"%s\"", r.Referer())
-		if refererInfo == "\"\"" {
-			refererInfo = "\"-\""
-		}
-		uaInfo := fmt.Sprintf("\"%s\"", r.UserAgent())
-		if uaInfo == "\"\"" {
-			uaInfo = "\"-\""
-		}
-		log.Println(addr, httpInfo, lrw.statusCode, refererInfo, uaInfo)
-	})
-}
-
-func (serv *Server) rateLimitingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		serv.rl.Take()
-		next.ServeHTTP(w, r)
-	})
-}
-
-func serverHeaderMiddleware(version string) func(http.Handler) http.Handler {
-	pwrBy := fmt.Sprintf("go-lg/%s Go/%s (+https://github.com/CHTJonas/go-lg)",
-		version, strings.TrimPrefix(runtime.Version(), "go"))
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("X-Powered-By", pwrBy)
-			w.Header().Set("X-Robots-Tag", "noindex, nofollow")
-			next.ServeHTTP(w, r)
-		})
 	}
 }
 
-func proxyMiddleware(next http.Handler) http.Handler {
-	return handlers.ProxyHeaders(next)
+func loggingMiddleware() echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			req := c.Request()
+			res := c.Response()
+			start := time.Now()
+			err := next(c)
+			stop := time.Now()
+			if err != nil {
+				c.Error(err)
+			}
+
+			dur := stop.Sub(start)
+			id := req.Header.Get("X-Request-Id")
+			addr := c.RealIP()
+			path := req.URL.Path
+			if path == "" {
+				path = "/"
+			}
+			httpInfo := fmt.Sprintf("\"%s %s %s\"", req.Method, path, req.Proto)
+			refererInfo := fmt.Sprintf("\"%s\"", req.Referer())
+			if refererInfo == "\"\"" {
+				refererInfo = "\"-\""
+			}
+			uaInfo := fmt.Sprintf("\"%s\"", req.UserAgent())
+			if uaInfo == "\"\"" {
+				uaInfo = "\"-\""
+			}
+			log.Println(id, addr, httpInfo, res.Status, res.Size, dur, refererInfo, uaInfo)
+
+			return nil
+		}
+	}
+}
+
+func recoveryMiddleware() echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			defer func() {
+				if r := recover(); r != nil {
+					if r != http.ErrAbortHandler {
+						debug.PrintStack()
+					}
+					err, ok := r.(error)
+					if !ok {
+						err = fmt.Errorf("%s", r)
+					}
+					c.Error(err)
+				}
+			}()
+			return next(c)
+		}
+	}
+}
+
+func serverHeaderMiddleware(version string) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			pwrBy := fmt.Sprintf("go-lg/%s Go/%s (+%s)", version, runtimeVer, aboutURL)
+			c.Response().Header().Set("X-Powered-By", pwrBy)
+			c.Response().Header().Set("X-Robots-Tag", "noindex, nofollow")
+			return next(c)
+		}
+	}
+}
+
+func clientRateLimitingMiddleware() echo.MiddlewareFunc {
+	extractor := func(ctx echo.Context) (string, error) {
+		return ctx.RealIP(), nil
+	}
+	return rateLimitingMiddleware(2, 4, 3*time.Minute, extractor)
+}
+
+func serverRateLimitingMiddleware() echo.MiddlewareFunc {
+	extractor := func(_ echo.Context) (string, error) {
+		return "localhost", nil
+	}
+	return rateLimitingMiddleware(10, 30, 3*time.Minute, extractor)
+}
+
+func rateLimitingMiddleware(rate rate.Limit, burst int, expiry time.Duration, extractor middleware.Extractor) echo.MiddlewareFunc {
+	return middleware.RateLimiterWithConfig(
+		middleware.RateLimiterConfig{
+			Store: middleware.NewRateLimiterMemoryStoreWithConfig(
+				middleware.RateLimiterMemoryStoreConfig{
+					Rate:      rate,
+					Burst:     burst,
+					ExpiresIn: expiry},
+			),
+			IdentifierExtractor: extractor,
+		})
 }

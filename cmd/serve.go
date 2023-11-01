@@ -33,7 +33,6 @@ var serverCmd = &cobra.Command{
 				log.Fatalln("Startup error:", err.Error())
 			}
 		}()
-		log.Println("Listening on", addr)
 
 		c := make(chan os.Signal, 1)
 		signal.Notify(c, syscall.SIGINT)

@@ -3,6 +3,7 @@ package web
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"os/exec"
 	"strings"
@@ -11,14 +12,13 @@ import (
 	"github.com/CHTJonas/go-lg/assets"
 	"github.com/CHTJonas/go-lg/internal/storage"
 	"github.com/cbroglie/mustache"
-	"github.com/gorilla/mux"
+	"github.com/labstack/echo/v4"
 	"go.uber.org/ratelimit"
 )
 
 type Server struct {
-	r       *mux.Router
+	e       *echo.Echo
 	s       *storage.Store
-	srv     *http.Server
 	version string
 	rl      ratelimit.Limiter
 }
@@ -29,69 +29,102 @@ func NewServer(store *storage.Store, version string) *Server {
 		version: version,
 		rl:      ratelimit.New(5),
 	}
-	r := mux.NewRouter().StrictSlash(true)
-	r.PathPrefix("/static/").Methods("GET").Handler(assets.Server())
-	r.Path("/").Methods("GET").HandlerFunc(s.getHomePage)
-	r.Path("/ping").Methods("GET").HandlerFunc(s.getPingForm)
-	r.Path("/ping/action").Methods("GET").HandlerFunc(s.submitPingForm)
-	r.Path("/ping/{uid}").Methods("GET").HandlerFunc(s.getPingResults)
-	r.Path("/traceroute").Methods("GET").HandlerFunc(s.getTracerouteForm)
-	r.Path("/traceroute/action").Methods("GET").HandlerFunc(s.submitTracerouteForm)
-	r.Path("/traceroute/{uid}").Methods("GET").HandlerFunc(s.getTracerouteResults)
-	r.Path("/whois").Methods("GET").HandlerFunc(s.getWHOISForm)
-	r.Path("/whois/action").Methods("GET").HandlerFunc(s.submitWHOISForm)
-	r.Path("/whois/{uid}").Methods("GET").HandlerFunc(s.getWHOISResults)
-	r.Path("/host").Methods("GET").HandlerFunc(s.getHostForm)
-	r.Path("/host/action").Methods("GET").HandlerFunc(s.submitHostForm)
-	r.Path("/host/{uid}").Methods("GET").HandlerFunc(s.getHostResults)
-	r.Path("/dig").Methods("GET").HandlerFunc(s.getDigForm)
-	r.Path("/dig/action").Methods("GET").HandlerFunc(s.submitDigForm)
-	r.Path("/dig/{uid}").Methods("GET").HandlerFunc(s.getDigResults)
-	r.Path("/robots.txt").Methods("GET").HandlerFunc(s.getRobotsTXT)
-	r.Use(s.loggingMiddleware)
-	r.Use(serverHeaderMiddleware(version))
-	r.Use(proxyMiddleware)
-	r.Use(s.rateLimitingMiddleware)
-	s.r = r
+
+	// Echo instance
+	e := echo.New()
+
+	// Handle errors as plaintext
+	e.HTTPErrorHandler = func(err error, c echo.Context) {
+		if err != nil {
+			if httpErr, ok := err.(*echo.HTTPError); ok {
+				if httpErr.Internal != nil {
+					log.Println(httpErr.Internal)
+				}
+				msg := strings.Title(httpErr.Message.(string))
+				body := fmt.Sprintln(httpErr.Code, msg)
+				c.String(httpErr.Code, body)
+			} else {
+				log.Println(err)
+				code := http.StatusInternalServerError
+				msg := fmt.Sprintln(code, "Internal Server Error")
+				c.String(code, msg)
+			}
+		}
+	}
+
+	// Hide startup banner
+	e.HideBanner = true
+	e.HidePort = true
+
+	// Reverse proxy
+	e.IPExtractor = echo.ExtractIPFromXFFHeader()
+
+	// Middleware
+	e.Use(requestIDMiddleware())
+	e.Use(loggingMiddleware())
+	e.Use(recoveryMiddleware())
+	e.Use(serverHeaderMiddleware(version))
+	e.Use(clientRateLimitingMiddleware())
+	e.Use(serverRateLimitingMiddleware())
+
+	// Routes
+	e.GET("/static/*", assets.Server())
+	e.GET("/", s.getHomePage)
+	e.GET("/ping", s.getPingForm)
+	e.GET("/ping/action", s.submitPingForm)
+	e.GET("/ping/:uid", s.getPingResults)
+	e.GET("/traceroute", s.getTracerouteForm)
+	e.GET("/traceroute/action", s.submitTracerouteForm)
+	e.GET("/traceroute/:uid", s.getTracerouteResults)
+	e.GET("/whois", s.getWHOISForm)
+	e.GET("/whois/action", s.submitWHOISForm)
+	e.GET("/whois/:uid", s.getWHOISResults)
+	e.GET("/host", s.getHostForm)
+	e.GET("/host/action", s.submitHostForm)
+	e.GET("/host/:uid", s.getHostResults)
+	e.GET("/dig", s.getDigForm)
+	e.GET("/dig/action", s.submitDigForm)
+	e.GET("/dig/:uid", s.getDigResults)
+	e.GET("/robots.txt", s.getRobotsTXT)
+
+	e.Server.ReadTimeout = 60 * time.Second
+	e.Server.WriteTimeout = 60 * time.Second
+	e.Server.IdleTimeout = 90 * time.Second
+
+	s.e = e
 	return s
 }
 
 func (serv *Server) Start(addr string) error {
-	serv.srv = &http.Server{
-		Addr:         addr,
-		Handler:      serv.r,
-		WriteTimeout: time.Second * 60,
-		ReadTimeout:  time.Second * 60,
-		IdleTimeout:  time.Second * 90,
-	}
-	return serv.srv.ListenAndServe()
+	log.Printf("Started Echo v%s listening on %s", echo.Version, addr)
+	return serv.e.Start(addr)
 }
 
 func (serv *Server) Stop(ctx context.Context) error {
-	serv.srv.SetKeepAlivesEnabled(false)
-	return serv.srv.Shutdown(ctx)
+	serv.e.Server.SetKeepAlivesEnabled(false)
+	return serv.e.Shutdown(ctx)
 }
 
-func (serv *Server) getHomePage(w http.ResponseWriter, r *http.Request) {
+func (serv *Server) getHomePage(c echo.Context) error {
 	partial, _ := assets.ReadFile("home.html.mustache")
 	layout, _ := assets.ReadFile("layout.html.mustache")
 	context := map[string]string{"title": "Home Page", "version": serv.version}
 	str, _ := mustache.RenderInLayout(string(partial), string(layout), context)
-	fmt.Fprint(w, str)
+	return c.HTML(http.StatusOK, str)
 }
 
-func (serv *Server) getPingForm(w http.ResponseWriter, r *http.Request) {
+func (serv *Server) getPingForm(c echo.Context) error {
 	partial, _ := assets.ReadFile("form.html.mustache")
 	layout, _ := assets.ReadFile("layout.html.mustache")
 	context := map[string]string{"title": "Ping Report", "submissionURL": "/ping/action", "placeholder": "Hostname or IP", "checkboxes": "yes"}
 	str, _ := mustache.RenderInLayout(string(partial), string(layout), context)
-	fmt.Fprint(w, str)
+	return c.HTML(http.StatusOK, str)
 }
 
-func (serv *Server) submitPingForm(w http.ResponseWriter, r *http.Request) {
-	target := r.URL.Query().Get("target")
+func (serv *Server) submitPingForm(c echo.Context) error {
+	target := c.QueryParam("target")
 	target = strings.TrimSpace(target)
-	protocolVersion := r.URL.Query().Get("protocolVersion")
+	protocolVersion := c.QueryParam("protocolVersion")
 	var cmd *exec.Cmd
 	if protocolVersion == "4" {
 		cmd = exec.Command("ping", "-4", "-c", "4", target)
@@ -102,35 +135,34 @@ func (serv *Server) submitPingForm(w http.ResponseWriter, r *http.Request) {
 	}
 	stdout := run(cmd)
 	uid, _ := serv.s.TrimWrite("ping", stdout)
-	redirect("ping", uid, w, r)
+	return redirect("ping", uid, c)
 }
 
-func (serv *Server) getPingResults(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	stdout := serv.s.Read("ping", vars["uid"])
+func (serv *Server) getPingResults(c echo.Context) error {
+	uid := c.Param("uid")
+	stdout := serv.s.Read("ping", uid)
 	if len(stdout) == 0 {
-		stdout = []byte("HTTP 404 Report Not Found")
-		w.WriteHeader(http.StatusNotFound)
+		return c.String(http.StatusNotFound, "HTTP 404 Report Not Found")
 	}
 	partial, _ := assets.ReadFile("form.html.mustache")
 	layout, _ := assets.ReadFile("layout.html.mustache")
 	context := map[string]string{"title": "Ping Report", "code": string(stdout), "submissionURL": "/ping/action", "placeholder": "Hostname or IP", "checkboxes": "yes"}
 	str, _ := mustache.RenderInLayout(string(partial), string(layout), context)
-	fmt.Fprint(w, str)
+	return c.HTML(http.StatusOK, str)
 }
 
-func (serv *Server) getTracerouteForm(w http.ResponseWriter, r *http.Request) {
+func (serv *Server) getTracerouteForm(c echo.Context) error {
 	partial, _ := assets.ReadFile("form.html.mustache")
 	layout, _ := assets.ReadFile("layout.html.mustache")
 	context := map[string]string{"title": "Traceroute Report", "submissionURL": "/traceroute/action", "placeholder": "Hostname or IP", "checkboxes": "yes"}
 	str, _ := mustache.RenderInLayout(string(partial), string(layout), context)
-	fmt.Fprint(w, str)
+	return c.HTML(http.StatusOK, str)
 }
 
-func (serv *Server) submitTracerouteForm(w http.ResponseWriter, r *http.Request) {
-	target := r.URL.Query().Get("target")
+func (serv *Server) submitTracerouteForm(c echo.Context) error {
+	target := c.QueryParam("target")
 	target = strings.TrimSpace(target)
-	protocolVersion := r.URL.Query().Get("protocolVersion")
+	protocolVersion := c.QueryParam("protocolVersion")
 	var cmd *exec.Cmd
 	if protocolVersion == "4" {
 		cmd = exec.Command("mtr", "-4", "-c", "4", "-bez", "-w", target)
@@ -141,121 +173,116 @@ func (serv *Server) submitTracerouteForm(w http.ResponseWriter, r *http.Request)
 	}
 	stdout := run(cmd)
 	uid, _ := serv.s.TrimWrite("traceroute", stdout)
-	redirect("traceroute", uid, w, r)
+	return redirect("traceroute", uid, c)
 }
 
-func (serv *Server) getTracerouteResults(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	stdout := serv.s.Read("traceroute", vars["uid"])
+func (serv *Server) getTracerouteResults(c echo.Context) error {
+	uid := c.Param("uid")
+	stdout := serv.s.Read("traceroute", uid)
 	if len(stdout) == 0 {
-		stdout = []byte("HTTP 404 Report Not Found")
-		w.WriteHeader(http.StatusNotFound)
+		return c.String(http.StatusNotFound, "HTTP 404 Report Not Found")
 	}
 	partial, _ := assets.ReadFile("form.html.mustache")
 	layout, _ := assets.ReadFile("layout.html.mustache")
 	context := map[string]string{"title": "Traceroute Report", "code": string(stdout), "submissionURL": "/traceroute/action", "placeholder": "Hostname or IP", "checkboxes": "yes"}
 	str, _ := mustache.RenderInLayout(string(partial), string(layout), context)
-	fmt.Fprint(w, str)
+	return c.HTML(http.StatusOK, str)
 }
 
-func (serv *Server) getWHOISForm(w http.ResponseWriter, r *http.Request) {
+func (serv *Server) getWHOISForm(c echo.Context) error {
 	partial, _ := assets.ReadFile("form.html.mustache")
 	layout, _ := assets.ReadFile("layout.html.mustache")
 	context := map[string]string{"title": "WHOIS Report", "submissionURL": "/whois/action", "placeholder": "Query"}
 	str, _ := mustache.RenderInLayout(string(partial), string(layout), context)
-	fmt.Fprint(w, str)
+	return c.HTML(http.StatusOK, str)
 }
 
-func (serv *Server) submitWHOISForm(w http.ResponseWriter, r *http.Request) {
-	target := r.URL.Query().Get("target")
+func (serv *Server) submitWHOISForm(c echo.Context) error {
+	target := c.QueryParam("target")
 	target = strings.TrimSpace(target)
 	cmd := exec.Command("whois", target)
 	stdout := run(cmd)
 	uid, _ := serv.s.TrimWrite("whois", stdout)
-	redirect("whois", uid, w, r)
+	return redirect("whois", uid, c)
 }
 
-func (serv *Server) getWHOISResults(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	stdout := serv.s.Read("whois", vars["uid"])
+func (serv *Server) getWHOISResults(c echo.Context) error {
+	uid := c.Param("uid")
+	stdout := serv.s.Read("whois", uid)
 	if len(stdout) == 0 {
-		stdout = []byte("HTTP 404 Report Not Found")
-		w.WriteHeader(http.StatusNotFound)
+		return c.String(http.StatusNotFound, "HTTP 404 Report Not Found")
 	}
 	partial, _ := assets.ReadFile("form.html.mustache")
 	layout, _ := assets.ReadFile("layout.html.mustache")
 	context := map[string]string{"title": "WHOIS Report", "code": string(stdout), "submissionURL": "/whois/action", "placeholder": "Query"}
 	str, _ := mustache.RenderInLayout(string(partial), string(layout), context)
-	fmt.Fprint(w, str)
+	return c.HTML(http.StatusOK, str)
 }
 
-func (serv *Server) getHostForm(w http.ResponseWriter, r *http.Request) {
+func (serv *Server) getHostForm(c echo.Context) error {
 	partial, _ := assets.ReadFile("form.html.mustache")
 	layout, _ := assets.ReadFile("layout.html.mustache")
 	context := map[string]string{"title": "Host Report", "submissionURL": "/host/action", "placeholder": "Hostname or IP"}
 	str, _ := mustache.RenderInLayout(string(partial), string(layout), context)
-	fmt.Fprint(w, str)
+	return c.HTML(http.StatusOK, str)
 }
 
-func (serv *Server) submitHostForm(w http.ResponseWriter, r *http.Request) {
-	target := r.URL.Query().Get("target")
+func (serv *Server) submitHostForm(c echo.Context) error {
+	target := c.QueryParam("target")
 	target = strings.TrimSpace(target)
 	cmd := exec.Command("host", strings.Split(target, " ")...)
 	stdout := run(cmd)
 	uid, _ := serv.s.TrimWrite("host", stdout)
-	redirect("host", uid, w, r)
+	return redirect("host", uid, c)
 }
 
-func (serv *Server) getHostResults(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	stdout := serv.s.Read("host", vars["uid"])
+func (serv *Server) getHostResults(c echo.Context) error {
+	uid := c.Param("uid")
+	stdout := serv.s.Read("host", uid)
 	if len(stdout) == 0 {
-		stdout = []byte("HTTP 404 Report Not Found")
-		w.WriteHeader(http.StatusNotFound)
+		return c.String(http.StatusNotFound, "HTTP 404 Report Not Found")
 	}
 	partial, _ := assets.ReadFile("form.html.mustache")
 	layout, _ := assets.ReadFile("layout.html.mustache")
 	context := map[string]string{"title": "Host Report", "code": string(stdout), "submissionURL": "/host/action", "placeholder": "Hostname or IP"}
 	str, _ := mustache.RenderInLayout(string(partial), string(layout), context)
-	fmt.Fprint(w, str)
+	return c.HTML(http.StatusOK, str)
 }
 
-func (serv *Server) getDigForm(w http.ResponseWriter, r *http.Request) {
+func (serv *Server) getDigForm(c echo.Context) error {
 	partial, _ := assets.ReadFile("form.html.mustache")
 	layout, _ := assets.ReadFile("layout.html.mustache")
 	context := map[string]string{"title": "DIG Report", "submissionURL": "/dig/action", "placeholder": "Query"}
 	str, _ := mustache.RenderInLayout(string(partial), string(layout), context)
-	fmt.Fprint(w, str)
+	return c.HTML(http.StatusOK, str)
 }
 
-func (serv *Server) submitDigForm(w http.ResponseWriter, r *http.Request) {
-	target := r.URL.Query().Get("target")
+func (serv *Server) submitDigForm(c echo.Context) error {
+	target := c.QueryParam("target")
 	target = strings.TrimSpace(target)
 	cmd := exec.Command("dig", strings.Split(target, " ")...)
 	stdout := run(cmd)
 	uid, _ := serv.s.TrimWrite("dig", stdout)
-	redirect("dig", uid, w, r)
+	return redirect("dig", uid, c)
 }
 
-func (serv *Server) getDigResults(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	stdout := serv.s.Read("dig", vars["uid"])
+func (serv *Server) getDigResults(c echo.Context) error {
+	uid := c.Param("uid")
+	stdout := serv.s.Read("dig", uid)
 	if len(stdout) == 0 {
-		stdout = []byte("HTTP 404 Report Not Found")
-		w.WriteHeader(http.StatusNotFound)
+		return c.String(http.StatusNotFound, "HTTP 404 Report Not Found")
 	}
 	partial, _ := assets.ReadFile("form.html.mustache")
 	layout, _ := assets.ReadFile("layout.html.mustache")
 	context := map[string]string{"title": "DIG Report", "code": string(stdout), "submissionURL": "/dig/action", "placeholder": "Query"}
 	str, _ := mustache.RenderInLayout(string(partial), string(layout), context)
-	fmt.Fprint(w, str)
+	return c.HTML(http.StatusOK, str)
 }
 
-func (serv *Server) getRobotsTXT(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "User-agent: *")
-	fmt.Fprintln(w, "Disallow: /")
+func (serv *Server) getRobotsTXT(c echo.Context) error {
+	return c.String(http.StatusOK, "User-agent: *\nDisallow: /")
 }
 
-func redirect(base string, uid string, w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "/"+base+"/"+uid, http.StatusTemporaryRedirect)
+func redirect(base string, uid string, c echo.Context) error {
+	return c.Redirect(http.StatusTemporaryRedirect, "/"+base+"/"+uid)
 }
