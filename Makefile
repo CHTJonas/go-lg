@@ -75,6 +75,7 @@ license: dir
 	cp LICENSE bin/LICENSE
 	go-licenses save . --save_path="bin/licenses"
 	rm -rf bin/licenses/github.com/CHTJonas/go-lg
+	rmdir --ignore-fail-on-non-empty bin/licenses/github.com/CHTJonas
 	(cd bin/licenses && zip -r ../third-party-licenses.zip *)
 	rm -rf bin/licenses
 
