@@ -127,11 +127,11 @@ func (serv *Server) submitPingForm(c echo.Context) error {
 	protocolVersion := c.QueryParam("protocolVersion")
 	var cmd *exec.Cmd
 	if protocolVersion == "4" {
-		cmd = exec.Command("ping", "-4", "-c", "4", target)
+		cmd = exec.Command("ping", "-4", "-B", "-c", "4", "-v", target)
 	} else if protocolVersion == "6" {
-		cmd = exec.Command("ping", "-6", "-c", "4", target)
+		cmd = exec.Command("ping", "-6", "-B", "-c", "4", "-v", target)
 	} else {
-		cmd = exec.Command("ping", "-c", "4", target)
+		cmd = exec.Command("ping", "-B", "-c", "4", "-v", target)
 	}
 	stdout, ok := run(cmd)
 	if !ok {
