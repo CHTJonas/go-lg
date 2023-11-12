@@ -21,7 +21,7 @@ var serverCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "Run web server",
 	Run: func(cmd *cobra.Command, args []string) {
-		log.Println("go-lg version", version)
+		log.Println("Starting go-lg version", version)
 
 		store := storage.NewStore(path)
 		defer store.Close()
