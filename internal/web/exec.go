@@ -6,8 +6,8 @@ import (
 	"syscall"
 )
 
-func run(cmd *exec.Cmd) ([]byte, bool) {
-	stdout, err := cmd.Output()
+func run(cmd *exec.Cmd) []byte {
+	stderrout, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Println("Failed to execute command", cmd)
 		if exitErr, ok := err.(*exec.ExitError); ok {
@@ -24,5 +24,5 @@ func run(cmd *exec.Cmd) ([]byte, bool) {
 			log.Println(err)
 		}
 	}
-	return stdout, err == nil
+	return stderrout
 }
