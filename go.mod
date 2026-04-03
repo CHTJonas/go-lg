@@ -7,7 +7,7 @@ require (
 	github.com/dgraph-io/badger v1.6.2
 	github.com/google/uuid v1.6.0
 	github.com/labstack/echo/v4 v4.11.2
-	github.com/spf13/cobra v1.8.0
+	github.com/spf13/cobra v1.10.2
 	go.uber.org/ratelimit v0.3.1
 	golang.org/x/time v0.5.0
 )
