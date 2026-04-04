@@ -32,11 +32,11 @@ build/linux/arm64: dir mod
 	export GOARCH=arm64
 	$(GOBUILD) -o bin/go-lg-linux-$(VER:v%=%)-arm64
 
-build/linux/i386: dir mod
+build/linux/386: dir mod
 	export CGO_ENABLED=0
 	export GOOS=linux
 	export GOARCH=386
-	$(GOBUILD) -o bin/go-lg-linux-$(VER:v%=%)-i386
+	$(GOBUILD) -o bin/go-lg-linux-$(VER:v%=%)-386
 
 build/linux/amd64: dir mod
 	export CGO_ENABLED=0
@@ -44,17 +44,15 @@ build/linux/amd64: dir mod
 	export GOARCH=amd64
 	$(GOBUILD) -o bin/go-lg-linux-$(VER:v%=%)-amd64
 
-build/linux: build/linux/armv7 build/linux/arm64 build/linux/i386 build/linux/amd64
+build/linux: build/linux/armv7 build/linux/arm64 build/linux/386 build/linux/amd64
 
 build: build/linux
 
 license: dir
 	cp NOTICE bin/NOTICE
 	cp LICENSE bin/LICENSE
-	go-licenses save . --save_path="bin/licenses"
-	rm -rf bin/licenses/github.com/CHTJonas/go-lg
-	rmdir --ignore-fail-on-non-empty bin/licenses/github.com/CHTJonas
-	(cd bin/licenses && zip -r ../third-party-licenses.zip *)
+	go-licenses save . --ignore github.com/CHTJonas/go-lg --save_path bin/licenses
+	(cd bin/licenses && zip -r ../third-party-licenses.zip . -i **/LICENSE **/NOTICE **/COPYING)
 	rm -rf bin/licenses
 
 clean:
