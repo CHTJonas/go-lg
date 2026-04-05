@@ -18,9 +18,13 @@ Flags:
   -p, --path string     path to database storage directory (default "/var/lib/go-lg")
 ```
 
+## Installation
+
+You can download statically compiled binaries from the GitHub release page - see https://github.com/CHTJonas/go-lg/releases/latest for the latest version. If you prefer to build the application yourself, see below.
+
 ## Compiling
 
-It should be relatively simple to checkout and build the code, assuming you have a suitable [Go toolchain installed](https://golang.org/doc/install). Running the following commands in a terminal will compile binaries for various operating systems and processor architectures and place them in `./bin`:
+It should be relatively simple to checkout and build the code, assuming you have a suitably modern [Go toolchain installed](https://golang.org/doc/install). Running the following commands in a terminal will compile Linux binaries for various processor architectures and place them in `./bin`:
 
 ```bash
 git clone https://github.com/CHTJonas/go-lg.git
