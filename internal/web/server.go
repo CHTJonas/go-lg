@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -12,12 +13,13 @@ import (
 	"github.com/CHTJonas/go-lg/assets"
 	"github.com/CHTJonas/go-lg/internal/storage"
 	"github.com/cbroglie/mustache"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"go.uber.org/ratelimit"
 )
 
 type Server struct {
 	e       *echo.Echo
+	h       *http.Server
 	s       *storage.Store
 	version string
 	rl      ratelimit.Limiter
@@ -34,27 +36,33 @@ func NewServer(store *storage.Store, version string) *Server {
 	e := echo.New()
 
 	// Handle errors as plaintext
-	e.HTTPErrorHandler = func(err error, c echo.Context) {
+	e.HTTPErrorHandler = func(c *echo.Context, err error) {
 		if err != nil {
-			if httpErr, ok := err.(*echo.HTTPError); ok {
-				if httpErr.Internal != nil {
-					log.Println(httpErr.Internal)
-				}
-				msg := strings.Title(httpErr.Message.(string))
-				body := fmt.Sprintln(httpErr.Code, msg)
-				c.String(httpErr.Code, body)
+			if he, ok := err.(*echo.HTTPError); ok {
+				msg := strings.Title(he.Message)
+				body := fmt.Sprintln(he.Code, msg)
+				c.String(he.Code, body)
 			} else {
-				log.Println(err)
 				code := http.StatusInternalServerError
-				msg := fmt.Sprintln(code, "Internal Server Error")
-				c.String(code, msg)
+				var sc echo.HTTPStatusCoder
+				if errors.As(err, &sc) {
+					if tmp := sc.StatusCode(); tmp != 0 {
+						code = tmp
+					}
+				}
+				var cErr error
+				if c.Request().Method == http.MethodHead {
+					cErr = c.NoContent(code)
+				} else {
+					msg := fmt.Sprintln(code, http.StatusText(code))
+					cErr = c.String(code, msg)
+				}
+				if cErr != nil {
+					log.Println("Failed to send error to client", cErr)
+				}
 			}
 		}
 	}
-
-	// Hide startup banner
-	e.HideBanner = true
-	e.HidePort = true
 
 	// Reverse proxy
 	e.IPExtractor = echo.ExtractIPFromXFFHeader()
@@ -87,25 +95,29 @@ func NewServer(store *storage.Store, version string) *Server {
 	e.GET("/dig/:uid", s.getDigResults)
 	e.GET("/robots.txt", s.getRobotsTXT)
 
-	e.Server.ReadTimeout = 60 * time.Second
-	e.Server.WriteTimeout = 60 * time.Second
-	e.Server.IdleTimeout = 90 * time.Second
-
 	s.e = e
 	return s
 }
 
 func (serv *Server) Start(addr string) error {
 	log.Printf("Started Echo v%s listening on %s", echo.Version, addr)
-	return serv.e.Start(addr)
+	s := &http.Server{
+		Addr:         addr,
+		Handler:      serv.e,
+		ReadTimeout:  60 * time.Second,
+		WriteTimeout: 60 * time.Second,
+		IdleTimeout:  90 * time.Second,
+	}
+	serv.h = s
+	return s.ListenAndServe()
 }
 
 func (serv *Server) Stop(ctx context.Context) error {
-	serv.e.Server.SetKeepAlivesEnabled(false)
-	return serv.e.Shutdown(ctx)
+	serv.h.SetKeepAlivesEnabled(false)
+	return serv.h.Shutdown(ctx)
 }
 
-func (serv *Server) getHomePage(c echo.Context) error {
+func (serv *Server) getHomePage(c *echo.Context) error {
 	partial, _ := assets.ReadFile("home.html.mustache")
 	layout, _ := assets.ReadFile("layout.html.mustache")
 	context := map[string]string{"title": "Home Page", "version": serv.version}
@@ -113,7 +125,7 @@ func (serv *Server) getHomePage(c echo.Context) error {
 	return c.HTML(http.StatusOK, str)
 }
 
-func (serv *Server) getPingForm(c echo.Context) error {
+func (serv *Server) getPingForm(c *echo.Context) error {
 	partial, _ := assets.ReadFile("form.html.mustache")
 	layout, _ := assets.ReadFile("layout.html.mustache")
 	context := map[string]string{"title": "Ping Report", "submissionURL": "/ping/action", "placeholder": "Hostname or IP", "checkboxes": "yes"}
@@ -121,7 +133,7 @@ func (serv *Server) getPingForm(c echo.Context) error {
 	return c.HTML(http.StatusOK, str)
 }
 
-func (serv *Server) submitPingForm(c echo.Context) error {
+func (serv *Server) submitPingForm(c *echo.Context) error {
 	target := c.QueryParam("target")
 	target = strings.TrimSpace(target)
 	protocolVersion := c.QueryParam("protocolVersion")
@@ -141,7 +153,7 @@ func (serv *Server) submitPingForm(c echo.Context) error {
 	return redirect("ping", uid, c)
 }
 
-func (serv *Server) getPingResults(c echo.Context) error {
+func (serv *Server) getPingResults(c *echo.Context) error {
 	uid := c.Param("uid")
 	stderrout := serv.s.Read("ping", uid)
 	if len(stderrout) == 0 {
@@ -154,7 +166,7 @@ func (serv *Server) getPingResults(c echo.Context) error {
 	return c.HTML(http.StatusOK, str)
 }
 
-func (serv *Server) getTracerouteForm(c echo.Context) error {
+func (serv *Server) getTracerouteForm(c *echo.Context) error {
 	partial, _ := assets.ReadFile("form.html.mustache")
 	layout, _ := assets.ReadFile("layout.html.mustache")
 	context := map[string]string{"title": "Traceroute Report", "submissionURL": "/traceroute/action", "placeholder": "Hostname or IP", "checkboxes": "yes"}
@@ -162,7 +174,7 @@ func (serv *Server) getTracerouteForm(c echo.Context) error {
 	return c.HTML(http.StatusOK, str)
 }
 
-func (serv *Server) submitTracerouteForm(c echo.Context) error {
+func (serv *Server) submitTracerouteForm(c *echo.Context) error {
 	target := c.QueryParam("target")
 	target = strings.TrimSpace(target)
 	protocolVersion := c.QueryParam("protocolVersion")
@@ -182,7 +194,7 @@ func (serv *Server) submitTracerouteForm(c echo.Context) error {
 	return redirect("traceroute", uid, c)
 }
 
-func (serv *Server) getTracerouteResults(c echo.Context) error {
+func (serv *Server) getTracerouteResults(c *echo.Context) error {
 	uid := c.Param("uid")
 	stderrout := serv.s.Read("traceroute", uid)
 	if len(stderrout) == 0 {
@@ -195,7 +207,7 @@ func (serv *Server) getTracerouteResults(c echo.Context) error {
 	return c.HTML(http.StatusOK, str)
 }
 
-func (serv *Server) getWHOISForm(c echo.Context) error {
+func (serv *Server) getWHOISForm(c *echo.Context) error {
 	partial, _ := assets.ReadFile("form.html.mustache")
 	layout, _ := assets.ReadFile("layout.html.mustache")
 	context := map[string]string{"title": "WHOIS Report", "submissionURL": "/whois/action", "placeholder": "Query"}
@@ -203,7 +215,7 @@ func (serv *Server) getWHOISForm(c echo.Context) error {
 	return c.HTML(http.StatusOK, str)
 }
 
-func (serv *Server) submitWHOISForm(c echo.Context) error {
+func (serv *Server) submitWHOISForm(c *echo.Context) error {
 	target := c.QueryParam("target")
 	target = strings.TrimSpace(target)
 	cmd := exec.Command("whois", target)
@@ -215,7 +227,7 @@ func (serv *Server) submitWHOISForm(c echo.Context) error {
 	return redirect("whois", uid, c)
 }
 
-func (serv *Server) getWHOISResults(c echo.Context) error {
+func (serv *Server) getWHOISResults(c *echo.Context) error {
 	uid := c.Param("uid")
 	stderrout := serv.s.Read("whois", uid)
 	if len(stderrout) == 0 {
@@ -228,7 +240,7 @@ func (serv *Server) getWHOISResults(c echo.Context) error {
 	return c.HTML(http.StatusOK, str)
 }
 
-func (serv *Server) getHostForm(c echo.Context) error {
+func (serv *Server) getHostForm(c *echo.Context) error {
 	partial, _ := assets.ReadFile("form.html.mustache")
 	layout, _ := assets.ReadFile("layout.html.mustache")
 	context := map[string]string{"title": "Host Report", "submissionURL": "/host/action", "placeholder": "Hostname or IP"}
@@ -236,7 +248,7 @@ func (serv *Server) getHostForm(c echo.Context) error {
 	return c.HTML(http.StatusOK, str)
 }
 
-func (serv *Server) submitHostForm(c echo.Context) error {
+func (serv *Server) submitHostForm(c *echo.Context) error {
 	target := c.QueryParam("target")
 	target = strings.TrimSpace(target)
 	cmd := exec.Command("host", strings.Split(target, " ")...)
@@ -248,7 +260,7 @@ func (serv *Server) submitHostForm(c echo.Context) error {
 	return redirect("host", uid, c)
 }
 
-func (serv *Server) getHostResults(c echo.Context) error {
+func (serv *Server) getHostResults(c *echo.Context) error {
 	uid := c.Param("uid")
 	stderrout := serv.s.Read("host", uid)
 	if len(stderrout) == 0 {
@@ -261,7 +273,7 @@ func (serv *Server) getHostResults(c echo.Context) error {
 	return c.HTML(http.StatusOK, str)
 }
 
-func (serv *Server) getDigForm(c echo.Context) error {
+func (serv *Server) getDigForm(c *echo.Context) error {
 	partial, _ := assets.ReadFile("form.html.mustache")
 	layout, _ := assets.ReadFile("layout.html.mustache")
 	context := map[string]string{"title": "DIG Report", "submissionURL": "/dig/action", "placeholder": "Query"}
@@ -269,7 +281,7 @@ func (serv *Server) getDigForm(c echo.Context) error {
 	return c.HTML(http.StatusOK, str)
 }
 
-func (serv *Server) submitDigForm(c echo.Context) error {
+func (serv *Server) submitDigForm(c *echo.Context) error {
 	target := c.QueryParam("target")
 	target = strings.TrimSpace(target)
 	cmd := exec.Command("dig", strings.Split(target, " ")...)
@@ -281,7 +293,7 @@ func (serv *Server) submitDigForm(c echo.Context) error {
 	return redirect("dig", uid, c)
 }
 
-func (serv *Server) getDigResults(c echo.Context) error {
+func (serv *Server) getDigResults(c *echo.Context) error {
 	uid := c.Param("uid")
 	stderrout := serv.s.Read("dig", uid)
 	if len(stderrout) == 0 {
@@ -294,10 +306,10 @@ func (serv *Server) getDigResults(c echo.Context) error {
 	return c.HTML(http.StatusOK, str)
 }
 
-func (serv *Server) getRobotsTXT(c echo.Context) error {
+func (serv *Server) getRobotsTXT(c *echo.Context) error {
 	return c.String(http.StatusOK, "User-agent: *\nDisallow: /")
 }
 
-func redirect(base string, uid string, c echo.Context) error {
+func redirect(base string, uid string, c *echo.Context) error {
 	return c.Redirect(http.StatusTemporaryRedirect, "/"+base+"/"+uid)
 }

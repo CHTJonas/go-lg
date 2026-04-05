@@ -10,9 +10,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
-	"golang.org/x/time/rate"
+	"github.com/labstack/echo/v5"
+	"github.com/labstack/echo/v5/middleware"
 )
 
 var aboutURL string = "https://github.com/CHTJonas/go-lg"
@@ -21,7 +20,7 @@ var id = uuid.New()
 
 func requestIDMiddleware() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
+		return func(c *echo.Context) error {
 			c.Request().Header.Set("X-Request-Id", id.String())
 			return next(c)
 		}
@@ -30,14 +29,14 @@ func requestIDMiddleware() echo.MiddlewareFunc {
 
 func loggingMiddleware() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
+		return func(c *echo.Context) error {
 			req := c.Request()
 			res := c.Response()
 			start := time.Now()
 			err := next(c)
 			stop := time.Now()
 			if err != nil {
-				c.Error(err)
+				c.Echo().HTTPErrorHandler(c, err)
 			}
 
 			dur := stop.Sub(start)
@@ -56,7 +55,8 @@ func loggingMiddleware() echo.MiddlewareFunc {
 			if uaInfo == "\"\"" {
 				uaInfo = "\"-\""
 			}
-			log.Println(id, addr, httpInfo, res.Status, res.Size, dur, refererInfo, uaInfo)
+			resp, _ := echo.UnwrapResponse(res)
+			log.Println(id, addr, httpInfo, resp.Status, resp.Size, dur, refererInfo, uaInfo)
 
 			return nil
 		}
@@ -65,7 +65,7 @@ func loggingMiddleware() echo.MiddlewareFunc {
 
 func recoveryMiddleware() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
+		return func(c *echo.Context) error {
 			defer func() {
 				if r := recover(); r != nil {
 					if r != http.ErrAbortHandler {
@@ -75,7 +75,7 @@ func recoveryMiddleware() echo.MiddlewareFunc {
 					if !ok {
 						err = fmt.Errorf("%s", r)
 					}
-					c.Error(err)
+					c.Echo().HTTPErrorHandler(c, err)
 				}
 			}()
 			return next(c)
@@ -85,7 +85,7 @@ func recoveryMiddleware() echo.MiddlewareFunc {
 
 func serverHeaderMiddleware(version string) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
+		return func(c *echo.Context) error {
 			pwrBy := fmt.Sprintf("go-lg/%s Go/%s (+%s)", version, runtimeVer, aboutURL)
 			c.Response().Header().Set("X-Powered-By", pwrBy)
 			c.Response().Header().Set("X-Robots-Tag", "noindex, nofollow")
@@ -95,27 +95,28 @@ func serverHeaderMiddleware(version string) echo.MiddlewareFunc {
 }
 
 func clientRateLimitingMiddleware() echo.MiddlewareFunc {
-	extractor := func(ctx echo.Context) (string, error) {
-		return ctx.RealIP(), nil
+	extractor := func(c *echo.Context) (string, error) {
+		return c.RealIP(), nil
 	}
 	return rateLimitingMiddleware(2, 4, 3*time.Minute, extractor)
 }
 
 func serverRateLimitingMiddleware() echo.MiddlewareFunc {
-	extractor := func(_ echo.Context) (string, error) {
+	extractor := func(_ *echo.Context) (string, error) {
 		return "localhost", nil
 	}
 	return rateLimitingMiddleware(10, 30, 3*time.Minute, extractor)
 }
 
-func rateLimitingMiddleware(rate rate.Limit, burst int, expiry time.Duration, extractor middleware.Extractor) echo.MiddlewareFunc {
+func rateLimitingMiddleware(rate float64, burst int, expiry time.Duration, extractor middleware.Extractor) echo.MiddlewareFunc {
 	return middleware.RateLimiterWithConfig(
 		middleware.RateLimiterConfig{
 			Store: middleware.NewRateLimiterMemoryStoreWithConfig(
 				middleware.RateLimiterMemoryStoreConfig{
 					Rate:      rate,
 					Burst:     burst,
-					ExpiresIn: expiry},
+					ExpiresIn: expiry,
+				},
 			),
 			IdentifierExtractor: extractor,
 		})
