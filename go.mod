@@ -6,7 +6,7 @@ require (
 	github.com/cbroglie/mustache v1.4.0
 	github.com/dgraph-io/badger v1.6.2
 	github.com/google/uuid v1.6.0
-	github.com/labstack/echo/v5 v5.1.1
+	github.com/labstack/echo/v5 v5.2.1
 	github.com/spf13/cobra v1.10.2
 	go.uber.org/ratelimit v0.3.1
 )
