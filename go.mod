@@ -3,7 +3,7 @@ module github.com/CHTJonas/go-lg
 go 1.25.0
 
 require (
-	github.com/cbroglie/mustache v1.4.0
+	github.com/cbroglie/mustache v1.4.1
 	github.com/dgraph-io/badger v1.6.2
 	github.com/google/uuid v1.6.0
 	github.com/labstack/echo/v5 v5.3.1
