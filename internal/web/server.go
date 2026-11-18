@@ -13,6 +13,7 @@ import (
 	"github.com/CHTJonas/go-lg/assets"
 	"github.com/CHTJonas/go-lg/internal/storage"
 	"github.com/cbroglie/mustache"
+	"github.com/dgraph-io/badger"
 	"github.com/labstack/echo/v5"
 	"go.uber.org/ratelimit"
 )
@@ -146,22 +147,21 @@ func (serv *Server) submitPingForm(c *echo.Context) error {
 		cmd = exec.Command("ping", "-B", "-c", "4", "-v", target)
 	}
 	stderrout := run(cmd)
-	if len(stderrout) == 0 {
-		return echo.ErrInternalServerError
-	}
 	uid, _ := serv.s.TrimWrite("ping", stderrout)
 	return redirect("ping", uid, c)
 }
 
 func (serv *Server) getPingResults(c *echo.Context) error {
 	uid := c.Param("uid")
-	stderrout := serv.s.Read("ping", uid)
-	if len(stderrout) == 0 {
+	stderrout, err := serv.s.Read("ping", uid)
+	if err == badger.ErrKeyNotFound {
 		return echo.ErrNotFound
+	} else if err != nil {
+		return echo.ErrInternalServerError
 	}
 	partial, _ := assets.ReadFile("form.html.mustache")
 	layout, _ := assets.ReadFile("layout.html.mustache")
-	context := map[string]string{"title": "Ping Report", "code": string(stderrout), "submissionURL": "/ping/action", "placeholder": "Hostname or IP", "checkboxes": "yes"}
+	context := map[string]string{"title": "Ping Report", "showCode": "1", "code": stderrout, "submissionURL": "/ping/action", "placeholder": "Hostname or IP", "checkboxes": "yes"}
 	str, _ := mustache.RenderInLayout(string(partial), string(layout), context)
 	return c.HTML(http.StatusOK, str)
 }
@@ -187,22 +187,21 @@ func (serv *Server) submitTracerouteForm(c *echo.Context) error {
 		cmd = exec.Command("mtr", "-c", "4", "-bez", "-w", target)
 	}
 	stderrout := run(cmd)
-	if len(stderrout) == 0 {
-		return echo.ErrInternalServerError
-	}
 	uid, _ := serv.s.TrimWrite("traceroute", stderrout)
 	return redirect("traceroute", uid, c)
 }
 
 func (serv *Server) getTracerouteResults(c *echo.Context) error {
 	uid := c.Param("uid")
-	stderrout := serv.s.Read("traceroute", uid)
-	if len(stderrout) == 0 {
+	stderrout, err := serv.s.Read("traceroute", uid)
+	if err == badger.ErrKeyNotFound {
 		return echo.ErrNotFound
+	} else if err != nil {
+		return echo.ErrInternalServerError
 	}
 	partial, _ := assets.ReadFile("form.html.mustache")
 	layout, _ := assets.ReadFile("layout.html.mustache")
-	context := map[string]string{"title": "Traceroute Report", "code": string(stderrout), "submissionURL": "/traceroute/action", "placeholder": "Hostname or IP", "checkboxes": "yes"}
+	context := map[string]string{"title": "Traceroute Report", "showCode": "1", "code": stderrout, "submissionURL": "/traceroute/action", "placeholder": "Hostname or IP", "checkboxes": "yes"}
 	str, _ := mustache.RenderInLayout(string(partial), string(layout), context)
 	return c.HTML(http.StatusOK, str)
 }
@@ -220,22 +219,21 @@ func (serv *Server) submitWHOISForm(c *echo.Context) error {
 	target = strings.TrimSpace(target)
 	cmd := exec.Command("whois", target)
 	stderrout := run(cmd)
-	if len(stderrout) == 0 {
-		return echo.ErrInternalServerError
-	}
 	uid, _ := serv.s.TrimWrite("whois", stderrout)
 	return redirect("whois", uid, c)
 }
 
 func (serv *Server) getWHOISResults(c *echo.Context) error {
 	uid := c.Param("uid")
-	stderrout := serv.s.Read("whois", uid)
-	if len(stderrout) == 0 {
+	stderrout, err := serv.s.Read("whois", uid)
+	if err == badger.ErrKeyNotFound {
 		return echo.ErrNotFound
+	} else if err != nil {
+		return echo.ErrInternalServerError
 	}
 	partial, _ := assets.ReadFile("form.html.mustache")
 	layout, _ := assets.ReadFile("layout.html.mustache")
-	context := map[string]string{"title": "WHOIS Report", "code": string(stderrout), "submissionURL": "/whois/action", "placeholder": "Query"}
+	context := map[string]string{"title": "WHOIS Report", "showCode": "1", "code": stderrout, "submissionURL": "/whois/action", "placeholder": "Query"}
 	str, _ := mustache.RenderInLayout(string(partial), string(layout), context)
 	return c.HTML(http.StatusOK, str)
 }
@@ -253,22 +251,21 @@ func (serv *Server) submitHostForm(c *echo.Context) error {
 	target = strings.TrimSpace(target)
 	cmd := exec.Command("host", strings.Split(target, " ")...)
 	stderrout := run(cmd)
-	if len(stderrout) == 0 {
-		return echo.ErrInternalServerError
-	}
 	uid, _ := serv.s.TrimWrite("host", stderrout)
 	return redirect("host", uid, c)
 }
 
 func (serv *Server) getHostResults(c *echo.Context) error {
 	uid := c.Param("uid")
-	stderrout := serv.s.Read("host", uid)
-	if len(stderrout) == 0 {
+	stderrout, err := serv.s.Read("host", uid)
+	if err == badger.ErrKeyNotFound {
 		return echo.ErrNotFound
+	} else if err != nil {
+		return echo.ErrInternalServerError
 	}
 	partial, _ := assets.ReadFile("form.html.mustache")
 	layout, _ := assets.ReadFile("layout.html.mustache")
-	context := map[string]string{"title": "Host Report", "code": string(stderrout), "submissionURL": "/host/action", "placeholder": "Hostname or IP"}
+	context := map[string]string{"title": "Host Report", "showCode": "1", "code": stderrout, "submissionURL": "/host/action", "placeholder": "Hostname or IP"}
 	str, _ := mustache.RenderInLayout(string(partial), string(layout), context)
 	return c.HTML(http.StatusOK, str)
 }
@@ -286,22 +283,21 @@ func (serv *Server) submitDigForm(c *echo.Context) error {
 	target = strings.TrimSpace(target)
 	cmd := exec.Command("dig", strings.Split(target, " ")...)
 	stderrout := run(cmd)
-	if len(stderrout) == 0 {
-		return echo.ErrInternalServerError
-	}
 	uid, _ := serv.s.TrimWrite("dig", stderrout)
 	return redirect("dig", uid, c)
 }
 
 func (serv *Server) getDigResults(c *echo.Context) error {
 	uid := c.Param("uid")
-	stderrout := serv.s.Read("dig", uid)
-	if len(stderrout) == 0 {
+	stderrout, err := serv.s.Read("dig", uid)
+	if err == badger.ErrKeyNotFound {
 		return echo.ErrNotFound
+	} else if err != nil {
+		return echo.ErrInternalServerError
 	}
 	partial, _ := assets.ReadFile("form.html.mustache")
 	layout, _ := assets.ReadFile("layout.html.mustache")
-	context := map[string]string{"title": "DIG Report", "code": string(stderrout), "submissionURL": "/dig/action", "placeholder": "Query"}
+	context := map[string]string{"title": "DIG Report", "showCode": "1", "code": stderrout, "submissionURL": "/dig/action", "placeholder": "Query"}
 	str, _ := mustache.RenderInLayout(string(partial), string(layout), context)
 	return c.HTML(http.StatusOK, str)
 }

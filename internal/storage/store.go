@@ -27,9 +27,9 @@ func (store *Store) Close() {
 	store.db.Close()
 }
 
-func (store *Store) Read(prefix string, uid string) []byte {
+func (store *Store) Read(prefix string, uid string) (string, error) {
 	var data []byte
-	store.db.View(func(txn *badger.Txn) error {
+	err := store.db.View(func(txn *badger.Txn) error {
 		item, err := txn.Get([]byte(prefix + uid))
 		if err != nil {
 			return err
@@ -39,7 +39,10 @@ func (store *Store) Read(prefix string, uid string) []byte {
 			return nil
 		})
 	})
-	return data
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
 }
 
 func (store *Store) Write(prefix string, data []byte) (string, error) {
