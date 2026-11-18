@@ -139,11 +139,12 @@ func (serv *Server) submitPingForm(c *echo.Context) error {
 	target = strings.TrimSpace(target)
 	protocolVersion := c.QueryParam("protocolVersion")
 	var cmd *exec.Cmd
-	if protocolVersion == "4" {
+	switch protocolVersion {
+	case "4":
 		cmd = exec.Command("ping", "-4", "-B", "-c", "4", "-v", target)
-	} else if protocolVersion == "6" {
+	case "6":
 		cmd = exec.Command("ping", "-6", "-B", "-c", "4", "-v", target)
-	} else {
+	default:
 		cmd = exec.Command("ping", "-B", "-c", "4", "-v", target)
 	}
 	stderrout := run(cmd)
@@ -180,11 +181,12 @@ func (serv *Server) submitTracerouteForm(c *echo.Context) error {
 	target = strings.TrimSpace(target)
 	protocolVersion := c.QueryParam("protocolVersion")
 	var cmd *exec.Cmd
-	if protocolVersion == "4" {
+	switch protocolVersion {
+	case "4":
 		cmd = exec.Command("mtr", "-4", "-c", "4", "-bez", "-w", target)
-	} else if protocolVersion == "6" {
+	case "6":
 		cmd = exec.Command("mtr", "-6", "-c", "4", "-bez", "-w", target)
-	} else {
+	default:
 		cmd = exec.Command("mtr", "-c", "4", "-bez", "-w", target)
 	}
 	stderrout := run(cmd)

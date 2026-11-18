@@ -57,7 +57,6 @@ func loggingMiddleware() echo.MiddlewareFunc {
 			}
 			resp, _ := echo.UnwrapResponse(res)
 			log.Println(id, addr, httpInfo, resp.Status, resp.Size, dur, refererInfo, uaInfo)
-
 			return nil
 		}
 	}
