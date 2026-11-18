@@ -43,10 +43,20 @@ func (store *Store) Read(prefix string, uid string) (string, error) {
 }
 
 func (store *Store) Write(prefix string, data []byte) (string, error) {
-	uid := GenerateUID()
-	return uid, store.db.Update(func(txn *badger.Txn) error {
+	var uid string
+	err := store.db.Update(func(txn *badger.Txn) error {
+		for {
+			uid = GenerateUID()
+			_, err := txn.Get([]byte(prefix + uid))
+			if err == badger.ErrKeyNotFound {
+				break
+			} else if err != nil {
+				return err
+			}
+		}
 		return txn.Set([]byte(prefix+uid), data)
 	})
+	return uid, err
 }
 
 func (store *Store) TrimWrite(prefix string, data []byte) (string, error) {
