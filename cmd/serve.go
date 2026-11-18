@@ -25,7 +25,8 @@ var serverCmd = &cobra.Command{
 
 		store, err := storage.NewStore(path)
 		if err != nil {
-			log.Fatalln("Error opening database:", err)
+			log.Println("Error opening database:", err)
+			return
 		}
 		defer func() {
 			err := store.Close()
@@ -40,7 +41,8 @@ var serverCmd = &cobra.Command{
 		log.Println("Starting server...")
 		go func() {
 			if err := serv.Start(addr); err != nil && err != http.ErrServerClosed {
-				log.Fatalln("Startup error:", err.Error())
+				log.Println("Startup error:", err)
+				return
 			}
 		}()
 
@@ -54,7 +56,8 @@ var serverCmd = &cobra.Command{
 		defer cancel()
 		log.Println("Waiting for server to exit...")
 		if err := serv.Stop(ctx); err != nil {
-			log.Fatalln("Shutdown error:", err.Error())
+			log.Println("Shutdown error:", err)
+			return
 		}
 	},
 }
