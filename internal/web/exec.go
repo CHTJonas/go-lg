@@ -12,7 +12,7 @@ func run(cmd *exec.Cmd) []byte {
 		log.Println("Failed to execute command", cmd)
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			if exitErr.Exited() {
-				log.Printf("PID %d exited with code %d\n%s", exitErr.Pid(), exitErr.ExitCode(), string(exitErr.Stderr))
+				log.Printf("PID %d exited with code %d:\n%s\n", exitErr.Pid(), exitErr.ExitCode(), string(exitErr.Stderr))
 			} else {
 				if ws, l := exitErr.Sys().(syscall.WaitStatus); l {
 					log.Println("PID", exitErr.Pid(), "was signalled:", ws.Signal())
