@@ -23,8 +23,18 @@ var serverCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Println("Starting go-lg version", version)
 
-		store := storage.NewStore(path)
-		defer store.Close()
+		store, err := storage.NewStore(path)
+		if err != nil {
+			log.Fatalln("Error opening database:", err)
+		}
+		defer func() {
+			err := store.Close()
+			if err != nil {
+				log.Println("Failed to close database:", err)
+			} else {
+				log.Println("Successfully closed database")
+			}
+		}()
 		serv := web.NewServer(store, version)
 
 		log.Println("Starting server...")
@@ -46,8 +56,6 @@ var serverCmd = &cobra.Command{
 		if err := serv.Stop(ctx); err != nil {
 			log.Fatalln("Shutdown error:", err.Error())
 		}
-		log.Println("Bye-bye!")
-		os.Exit(0)
 	},
 }
 

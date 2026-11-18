@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"log"
 	"os"
 
@@ -16,7 +15,7 @@ var rootCmd = &cobra.Command{
 func Execute(v string) {
 	version = v
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		// No need to log here
 		os.Exit(1)
 	}
 }

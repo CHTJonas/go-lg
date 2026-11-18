@@ -9,10 +9,14 @@ import (
 func run(cmd *exec.Cmd) []byte {
 	stderrout, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Println("Failed to execute command", cmd)
+		log.Println("Failed to execute command:", cmd)
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			if exitErr.Exited() {
-				log.Printf("PID %d exited with code %d:\n%s\n", exitErr.Pid(), exitErr.ExitCode(), string(exitErr.Stderr))
+				if len(exitErr.Stderr) > 0 {
+					log.Printf("PID %d exited with code %d:\n%s\n", exitErr.Pid(), exitErr.ExitCode(), string(exitErr.Stderr))
+				} else {
+					log.Printf("PID %d exited with code %d\n", exitErr.Pid(), exitErr.ExitCode())
+				}
 			} else {
 				if ws, l := exitErr.Sys().(syscall.WaitStatus); l {
 					log.Println("PID", exitErr.Pid(), "was signalled:", ws.Signal())
@@ -21,7 +25,7 @@ func run(cmd *exec.Cmd) []byte {
 				}
 			}
 		} else {
-			log.Println(err)
+			log.Println("Error:", err)
 		}
 	}
 	return stderrout

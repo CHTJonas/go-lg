@@ -59,7 +59,7 @@ func NewServer(store *storage.Store, version string) *Server {
 					cErr = c.String(code, msg)
 				}
 				if cErr != nil {
-					log.Println("Failed to send error to client", cErr)
+					log.Println("Failed to send error to client:", cErr)
 				}
 			}
 		}
@@ -157,6 +157,7 @@ func (serv *Server) getPingResults(c *echo.Context) error {
 	if err == badger.ErrKeyNotFound {
 		return echo.ErrNotFound
 	} else if err != nil {
+		log.Println("Failed to get ping results:", err)
 		return echo.ErrInternalServerError
 	}
 	partial, _ := assets.ReadFile("form.html.mustache")
@@ -197,6 +198,7 @@ func (serv *Server) getTracerouteResults(c *echo.Context) error {
 	if err == badger.ErrKeyNotFound {
 		return echo.ErrNotFound
 	} else if err != nil {
+		log.Println("Failed to get mtr results:", err)
 		return echo.ErrInternalServerError
 	}
 	partial, _ := assets.ReadFile("form.html.mustache")
@@ -229,6 +231,7 @@ func (serv *Server) getWHOISResults(c *echo.Context) error {
 	if err == badger.ErrKeyNotFound {
 		return echo.ErrNotFound
 	} else if err != nil {
+		log.Println("Failed to get whois results:", err)
 		return echo.ErrInternalServerError
 	}
 	partial, _ := assets.ReadFile("form.html.mustache")
@@ -261,6 +264,7 @@ func (serv *Server) getHostResults(c *echo.Context) error {
 	if err == badger.ErrKeyNotFound {
 		return echo.ErrNotFound
 	} else if err != nil {
+		log.Println("Failed to get host results:", err)
 		return echo.ErrInternalServerError
 	}
 	partial, _ := assets.ReadFile("form.html.mustache")
@@ -293,6 +297,7 @@ func (serv *Server) getDigResults(c *echo.Context) error {
 	if err == badger.ErrKeyNotFound {
 		return echo.ErrNotFound
 	} else if err != nil {
+		log.Println("Failed to get dig results:", err)
 		return echo.ErrInternalServerError
 	}
 	partial, _ := assets.ReadFile("form.html.mustache")

@@ -11,20 +11,20 @@ type Store struct {
 	db *badger.DB
 }
 
-func NewStore(path string) *Store {
+func NewStore(path string) (*Store, error) {
 	store := &Store{}
 	opts := badger.DefaultOptions(path).WithLogger(&DBLogger{INFO})
 	log.Printf("Opening database at %s...\n", path)
 	db, err := badger.Open(opts)
 	if err != nil {
-		log.Fatalln("Error opening database:", err.Error())
+		return nil, err
 	}
 	store.db = db
-	return store
+	return store, nil
 }
 
-func (store *Store) Close() {
-	store.db.Close()
+func (store *Store) Close() error {
+	return store.db.Close()
 }
 
 func (store *Store) Read(prefix string, uid string) (string, error) {
@@ -39,10 +39,7 @@ func (store *Store) Read(prefix string, uid string) (string, error) {
 			return nil
 		})
 	})
-	if err != nil {
-		return "", err
-	}
-	return string(data), nil
+	return string(data), err
 }
 
 func (store *Store) Write(prefix string, data []byte) (string, error) {
