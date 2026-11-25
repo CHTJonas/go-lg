@@ -1,6 +1,3 @@
-SHELL := bash
-.ONESHELL:
-
 VER=$(shell git describe --tags --always --dirty)
 GO=$(shell which go)
 GOOPTS=-trimpath -mod=readonly -ldflags "-X main.version=$(VER:v%=%) -s -w -buildid="
@@ -9,53 +6,68 @@ GOMOD=$(GO) mod
 GOFMT=$(GO) fmt
 GOBUILD=$(GO) build $(GOOPTS)
 
+.PHONY: all
+all:
+	@$(MAKE) format
+	@$(MAKE) build
+	@$(MAKE) license
+
+.PHONY: dir
 dir:
 	@if [ ! -d bin ]; then mkdir -p bin; fi
 
+.PHONY: mod
 mod:
-	@$(GOMOD) download
-	@$(GOINSTALL) github.com/google/go-licenses@latest
+	$(GOMOD) download
+	$(GOINSTALL) github.com/google/go-licenses@latest
 
+.PHONY: format
 format:
-	@$(GOFMT) ./...
+	$(GOFMT) ./...
 
+.PHONY: build/linux/armv7
 build/linux/armv7: dir mod
-	export CGO_ENABLED=0
-	export GOOS=linux
-	export GOARCH=arm
-	export GOARM=7
+	@export CGO_ENABLED=0
+	@export GOOS=linux
+	@export GOARCH=arm
+	@export GOARM=7
 	$(GOBUILD) -o bin/go-lg-linux-$(VER:v%=%)-armv7
 
+.PHONY: build/linux/arm64
 build/linux/arm64: dir mod
-	export CGO_ENABLED=0
-	export GOOS=linux
-	export GOARCH=arm64
+	@export CGO_ENABLED=0
+	@export GOOS=linux
+	@export GOARCH=arm64
 	$(GOBUILD) -o bin/go-lg-linux-$(VER:v%=%)-arm64
 
+.PHONY: build/linux/386
 build/linux/386: dir mod
-	export CGO_ENABLED=0
-	export GOOS=linux
-	export GOARCH=386
+	@export CGO_ENABLED=0
+	@export GOOS=linux
+	@export GOARCH=386
 	$(GOBUILD) -o bin/go-lg-linux-$(VER:v%=%)-386
 
+.PHONY: build/linux/amd64
 build/linux/amd64: dir mod
-	export CGO_ENABLED=0
-	export GOOS=linux
-	export GOARCH=amd64
+	@export CGO_ENABLED=0
+	@export GOOS=linux
+	@export GOARCH=amd64
 	$(GOBUILD) -o bin/go-lg-linux-$(VER:v%=%)-amd64
 
+.PHONY: build/linux
 build/linux: build/linux/armv7 build/linux/arm64 build/linux/386 build/linux/amd64
 
+.PHONY: build
 build: build/linux
 
+.PHONY: license
 license: dir
-	cp NOTICE bin/NOTICE
-	cp LICENSE bin/LICENSE
+	@cp NOTICE bin/NOTICE
+	@cp LICENSE bin/LICENSE
 	go-licenses save . --ignore github.com/CHTJonas/go-lg --save_path bin/licenses
 	(cd bin/licenses && zip -r ../third-party-licenses.zip . -i **/LICENSE **/LICENSE.* **/NOTICE **/NOTICE.* **/COPYING **/COPYING.*)
-	rm -rf bin/licenses
+	@rm -rf bin/licenses
 
+.PHONY: clean
 clean:
 	@rm -rf bin
-
-all: format build license
